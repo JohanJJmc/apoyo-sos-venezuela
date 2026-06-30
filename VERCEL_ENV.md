@@ -1,10 +1,11 @@
 # Variables para Vercel
 
-En Vercel, cuando te pida **Environment Variables**, agrega estas dos:
+En Vercel, cuando te pida **Environment Variables**, agrega estas variables:
 
 ```txt
 VITE_SUPABASE_URL=https://uiryopmxelpfpbsqjsyb.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_bFzow9Gf7o-zjEeTbHfd3Q_q7mL6c5X
+VITE_AUTH_REDIRECT_URL=https://apoyo-sos-venezuela.vercel.app
 ```
 
 No agregues ninguna clave `secret` ni `service_role`.

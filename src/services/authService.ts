@@ -14,6 +14,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function getAuthRedirectUrl() {
+  return import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
+}
+
 function sessionFromSupabaseUser(user: { id: string; email?: string | null }): AppSession {
   return {
     userId: user.id,
@@ -79,7 +83,7 @@ export const authService = {
     const { error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: getAuthRedirectUrl() },
     });
     if (error) throw error;
   },
