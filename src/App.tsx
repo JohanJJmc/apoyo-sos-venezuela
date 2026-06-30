@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "./components/AppHeader";
 import { AppLayout } from "./components/AppLayout";
 import { EmptyState } from "./components/EmptyState";
@@ -32,9 +32,12 @@ function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [locationMessage, setLocationMessage] = useState("Solicitando ubicacion GPS...");
   const [detectedAddress, setDetectedAddress] = useState("");
+  const [manualAddress, setManualAddress] = useState("");
+  const [isDetectingManualAddress, setIsDetectingManualAddress] = useState(false);
   const [search, setSearch] = useState("");
   const [formError, setFormError] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
+  const manualGeocodeRequest = useRef(0);
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -74,7 +77,7 @@ function App() {
       };
       setUserLocation(nextLocation);
       setLocationMessage("Ubicacion detectada.");
-      void reverseGeocode(nextLocation);
+      if (!pickingLocation) void reverseGeocode(nextLocation);
     };
 
     const handlePositionError = () => {
@@ -94,19 +97,43 @@ function App() {
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [pickingLocation]);
+
+  async function getAddressForLocation(location: Coordinates) {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${location.latitude}&lon=${location.longitude}`,
+    );
+    const result = (await response.json()) as { display_name?: string };
+    return result.display_name ?? "";
+  }
 
   async function reverseGeocode(location: Coordinates) {
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}`,
-      );
-      const result = (await response.json()) as { display_name?: string };
-      if (result.display_name) setDetectedAddress(result.display_name);
+      const address = await getAddressForLocation(location);
+      if (address) setDetectedAddress(address);
     } catch {
-      setDetectedAddress("");
+      // Keep the last known address if the provider is temporarily unavailable.
     }
   }
+
+  const reverseGeocodeManual = useCallback(async (location: Coordinates) => {
+    const requestId = manualGeocodeRequest.current + 1;
+    manualGeocodeRequest.current = requestId;
+    setIsDetectingManualAddress(true);
+
+    try {
+      const address = await getAddressForLocation(location);
+      if (manualGeocodeRequest.current === requestId) {
+        setManualAddress(address || `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+      }
+    } catch {
+      if (manualGeocodeRequest.current === requestId) {
+        setManualAddress(`${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+      }
+    } finally {
+      if (manualGeocodeRequest.current === requestId) setIsDetectingManualAddress(false);
+    }
+  }, []);
 
   const visibleRequests = useMemo(
     () =>
@@ -204,22 +231,29 @@ function App() {
 
   function startManualLocation() {
     setActiveView("map");
+    const startingLocation = manualLocation ?? userLocation;
+    if (startingLocation) {
+      setManualLocation(startingLocation);
+      setManualAddress(detectedAddress);
+    }
     setPickingLocation(true);
     setFormError("");
   }
 
   function cancelManualLocation() {
     setManualLocation(undefined);
+    setManualAddress("");
     setPickingLocation(false);
     setFormError("");
   }
 
-  function previewManualLocation(location: Coordinates) {
+  const previewManualLocation = useCallback((location: Coordinates) => {
     setManualLocation(location);
-    void reverseGeocode(location);
-  }
+    void reverseGeocodeManual(location);
+  }, [reverseGeocodeManual]);
 
   function confirmManualLocation() {
+    if (manualAddress) setDetectedAddress(manualAddress);
     setPickingLocation(false);
     setFormError("");
   }
@@ -297,7 +331,7 @@ function App() {
         isOpen={isFormOpen}
         currentLocation={userLocation}
         selectedLocation={manualLocation}
-        initialAddress={detectedAddress}
+        initialAddress={manualAddress || detectedAddress}
         similarRequest={similarRequest}
         onClose={() => {
           setIsFormOpen(false);
@@ -312,9 +346,9 @@ function App() {
 
       {pickingLocation && (
         <div className="absolute inset-x-4 bottom-5 z-[1200] rounded-card bg-white p-4 text-center shadow-sheet">
-          <p className="text-[13px] font-extrabold text-[#00A651]">Ubicación manual</p>
-          <p className="mt-1 line-clamp-2 text-[14px] font-semibold text-sos-muted">
-            {detectedAddress || "Mueve el mapa para detectar la dirección"}
+          <p className="text-[13px] font-extrabold text-sos-muted">Ubicación manual</p>
+          <p className="mt-1 line-clamp-2 text-[15px] font-extrabold text-[#00A651]">
+            {isDetectingManualAddress ? "Detectando dirección..." : manualAddress || "Mueve el mapa para detectar la dirección"}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button

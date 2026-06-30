@@ -40,9 +40,9 @@ export function MapScreen({
   }, [center.latitude, center.longitude]);
 
   useEffect(() => {
-    if (!map.current || !userLocation) return;
+    if (!map.current || !userLocation || pickingLocation) return;
     map.current.setView([userLocation.latitude, userLocation.longitude], 14);
-  }, [userLocation]);
+  }, [pickingLocation, userLocation]);
 
   useEffect(() => {
     if (!map.current || !markers.current) return;
