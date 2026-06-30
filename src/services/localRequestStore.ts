@@ -3,6 +3,7 @@ import { distanceInMeters } from "../utils/distance";
 import { getCurrentUserId } from "./authSession";
 
 const STORAGE_KEY = "apoyo-sos-requests";
+const RESOLVED_RETENTION_MS = 48 * 60 * 60 * 1000;
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
 
@@ -21,6 +22,7 @@ const seedRequests: Request[] = [
     status: "pending",
     partialSupport: false,
     createdAt: new Date(Date.now() - 20 * 60000).toISOString(),
+    resolvedAt: undefined,
     createdBy: "seed-user",
     comments: [],
     supportReports: [],
@@ -39,6 +41,7 @@ const seedRequests: Request[] = [
     status: "pending",
     partialSupport: true,
     createdAt: new Date(Date.now() - 3 * 60 * 60000).toISOString(),
+    resolvedAt: undefined,
     createdBy: "seed-user",
     comments: [],
     supportReports: [],
@@ -57,6 +60,7 @@ const seedRequests: Request[] = [
     status: "resolved",
     partialSupport: false,
     createdAt: new Date(Date.now() - 26 * 60 * 60000).toISOString(),
+    resolvedAt: new Date(Date.now() - 26 * 60 * 60000).toISOString(),
     createdBy: "seed-user",
     comments: [],
     supportReports: [],
@@ -82,13 +86,24 @@ function write(requests: Request[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
 }
 
+function removeExpiredResolved(requests: Request[]) {
+  const currentTime = Date.now();
+  return requests.filter((request) => {
+    if (request.status !== "resolved") return true;
+    const resolvedTime = request.resolvedAt ? new Date(request.resolvedAt).getTime() : new Date(request.createdAt).getTime();
+    return currentTime - resolvedTime < RESOLVED_RETENTION_MS;
+  });
+}
+
 export const localRequestStore = {
   get currentUserId() {
     return getCurrentUserId();
   },
 
   listRequests() {
-    return read();
+    const requests = removeExpiredResolved(read());
+    write(requests);
+    return requests;
   },
 
   createRequest(input: Omit<Request, "id" | "status" | "partialSupport" | "createdAt" | "createdBy" | "comments" | "supportReports">) {
@@ -99,6 +114,7 @@ export const localRequestStore = {
       status: "pending",
       partialSupport: false,
       createdAt: now(),
+      resolvedAt: undefined,
       createdBy: getCurrentUserId(),
       comments: [],
       supportReports: [],
@@ -166,6 +182,7 @@ export const localRequestStore = {
           ...request,
           status: status === "confirmed" ? "resolved" : "pending",
           partialSupport: status === "partial" ? true : request.partialSupport,
+          resolvedAt: status === "confirmed" ? now() : undefined,
           supportReports: request.supportReports.map((report, index) =>
             index === request.supportReports.length - 1 ? { ...report, status } : report,
           ),

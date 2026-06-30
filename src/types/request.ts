@@ -35,6 +35,7 @@ export interface Request {
   status: RequestStatus;
   partialSupport: boolean;
   createdAt: string;
+  resolvedAt?: string;
   createdBy: string;
   requesterName?: string;
   requesterPhone?: string;

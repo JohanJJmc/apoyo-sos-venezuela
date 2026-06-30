@@ -12,12 +12,16 @@ create table if not exists public.requests (
   status text not null default 'pending' check (status in ('pending', 'resolved')),
   partial_support boolean not null default false,
   created_at timestamptz not null default now(),
+  resolved_at timestamptz,
   created_by text not null default 'local-user',
   requester_name text,
   requester_phone text,
   requester_anonymous boolean not null default false,
   address text
 );
+
+alter table public.requests
+add column if not exists resolved_at timestamptz;
 
 create table if not exists public.support_reports (
   id uuid primary key default gen_random_uuid(),
@@ -79,4 +83,18 @@ with check (true);
 create index if not exists requests_status_idx on public.requests(status);
 create index if not exists requests_category_idx on public.requests(category);
 create index if not exists requests_created_at_idx on public.requests(created_at desc);
+create index if not exists requests_resolved_at_idx on public.requests(resolved_at)
+where status = 'resolved';
 create index if not exists support_reports_request_id_idx on public.support_reports(request_id);
+
+create or replace function public.delete_resolved_requests_after_48_hours()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.requests
+  where status = 'resolved'
+    and resolved_at is not null
+    and resolved_at < now() - interval '48 hours';
+$$;

@@ -18,6 +18,7 @@ type RequestRow = {
   status: "pending" | "resolved";
   partial_support: boolean;
   created_at: string;
+  resolved_at: string | null;
   created_by: string;
   requester_name: string | null;
   requester_phone: string | null;
@@ -53,6 +54,7 @@ function mapRequest(row: RequestRow, supportReports: SupportReportRow[] = []): R
     status: row.status,
     partialSupport: row.partial_support,
     createdAt: row.created_at,
+    resolvedAt: row.resolved_at ?? undefined,
     createdBy: row.created_by,
     requesterName: row.requester_name ?? undefined,
     requesterPhone: row.requester_phone ?? undefined,
@@ -93,6 +95,7 @@ function requestToInsert(
     longitude: input.longitude,
     status: "pending" as const,
     partial_support: false,
+    resolved_at: null,
     created_by: getCurrentUserId(),
     requester_name: input.requesterName ?? null,
     requester_phone: input.requesterPhone ?? null,
@@ -188,6 +191,7 @@ export const requestService = {
     const updates = {
       status: status === "confirmed" ? ("resolved" as const) : ("pending" as const),
       partial_support: status === "partial",
+      resolved_at: status === "confirmed" ? new Date().toISOString() : null,
     };
 
     const { error: requestError } = await supabase.from("requests").update(updates).eq("id", requestId);
