@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #102a43;
+  font-family:
+    Inter, "Nunito Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #fafaf7;
+}
+
+.sos-gradient {
+  background: linear-gradient(100deg, #ff4545 0%, #f27405 100%);
+}
+
+.sos-tabs {
+  background: #fafaf7;
+  border: 1px solid #d9e2ec;
+  border-radius: 999px;
+  display: grid;
+  grid-template-columns: 1fr 1.25fr 1fr;
+  padding: 4px;
+}
+
+.sos-tab-button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: #102a43;
+  font-size: 15px;
+  font-weight: 650;
+  min-height: 48px;
+  min-width: 0;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.sos-tab-button[data-active="true"] {
+  background: #f27405;
+  box-shadow: 0 10px 28px rgba(16, 42, 67, 0.12);
+  color: #ffffff;
+}
+
+.sos-tab-button:focus {
+  outline: none;
+}
+
+.sos-tab-button:focus-visible {
+  outline: 3px solid #ffd8b0;
+  outline-offset: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #eaf1ff;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+.leaflet-bottom .leaflet-control {
+  margin-bottom: 96px;
+}
+
+.sos-marker {
+  align-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(16, 42, 67, 0.22);
+  display: flex;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.sos-marker svg {
+  height: 19px;
+  width: 19px;
+  stroke: #ffffff;
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Apoyo SOS Venezuela",
+  "short_name": "Apoyo SOS",
+  "description": "Solicitudes de apoyo de emergencia en un mapa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f9fc",
+  "theme_color": "#be001c",
+  "icons": [
+    {
+      "src": "/assets/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
