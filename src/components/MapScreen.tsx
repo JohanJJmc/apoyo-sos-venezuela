@@ -6,7 +6,6 @@ import type { Coordinates, Request } from "../types/request";
 interface MapScreenProps {
   requests: Request[];
   userLocation?: Coordinates;
-  manualLocation?: Coordinates;
   pickingLocation: boolean;
   onSelectRequest: (request: Request) => void;
   onCenterChange: (location: Coordinates) => void;
@@ -18,7 +17,6 @@ const DEFAULT_CENTER: Coordinates = { latitude: 10.5, longitude: -66.9167 };
 export function MapScreen({
   requests,
   userLocation,
-  manualLocation,
   pickingLocation,
   onSelectRequest,
   onCenterChange,
@@ -27,7 +25,6 @@ export function MapScreen({
   const mapElement = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
-  const selectedLocationMarker = useRef<L.Marker | null>(null);
   const didCenterOnUser = useRef(false);
   const center = useMemo(() => userLocation ?? DEFAULT_CENTER, [userLocation]);
 
@@ -90,21 +87,6 @@ export function MapScreen({
       map.current?.off("click", handleClick);
     };
   }, [pickingLocation, onManualLocationPreview]);
-
-  useEffect(() => {
-    if (!map.current) return;
-    if (selectedLocationMarker.current) selectedLocationMarker.current.remove();
-    if (!manualLocation) return;
-
-    selectedLocationMarker.current = L.marker([manualLocation.latitude, manualLocation.longitude], {
-      icon: L.divIcon({
-        className: "",
-        html: '<div class="sos-marker" style="background:#102A43"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></div>',
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
-      }),
-    }).addTo(map.current);
-  }, [manualLocation]);
 
   return (
     <div className="relative h-full w-full">

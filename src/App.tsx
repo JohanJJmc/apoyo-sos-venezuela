@@ -13,6 +13,7 @@ import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBo
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SupportOfferForm } from "./components/SupportOfferForm";
 import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
+import { reverseGeocodeAddress } from "./services/geocodeService";
 import { requestService } from "./services/requestService";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
@@ -102,17 +103,9 @@ function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [pickingLocation]);
 
-  async function getAddressForLocation(location: Coordinates) {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${location.latitude}&lon=${location.longitude}`,
-    );
-    const result = (await response.json()) as { display_name?: string };
-    return result.display_name ?? "";
-  }
-
   async function reverseGeocode(location: Coordinates) {
     try {
-      const address = await getAddressForLocation(location);
+      const address = await reverseGeocodeAddress(location);
       if (address) setDetectedAddress(address);
     } catch {
       // Keep the last known address if the provider is temporarily unavailable.
@@ -125,9 +118,9 @@ function App() {
     setIsDetectingManualAddress(true);
 
     try {
-      const address = await getAddressForLocation(location);
+      const address = await reverseGeocodeAddress(location);
       if (manualGeocodeRequest.current === requestId) {
-        setManualAddress(address || `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+        setManualAddress(address);
       }
     } catch {
       if (manualGeocodeRequest.current === requestId) {
@@ -144,9 +137,9 @@ function App() {
     setIsDetectingMapCenterAddress(true);
 
     try {
-      const address = await getAddressForLocation(location);
+      const address = await reverseGeocodeAddress(location);
       if (mapGeocodeRequest.current === requestId) {
-        setMapCenterAddress(address || `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+        setMapCenterAddress(address);
       }
     } catch {
       if (mapGeocodeRequest.current === requestId) {
@@ -309,7 +302,6 @@ function App() {
           <MapScreen
             requests={visibleRequests}
             userLocation={userLocation}
-            manualLocation={manualLocation}
             pickingLocation={pickingLocation}
             onSelectRequest={setSelectedRequest}
             onCenterChange={handleMapCenterChange}
