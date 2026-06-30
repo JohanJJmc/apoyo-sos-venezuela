@@ -13,6 +13,62 @@ function authErrorMessage(error: unknown) {
   return "No se pudo completar la acción. Intenta de nuevo.";
 }
 
+function sanitizePassword(value: string) {
+  return value.replace(/\s/g, "").slice(0, 12);
+}
+
+function PasswordToggleIcon({ visible }: { visible: boolean }) {
+  return visible ? (
+    <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+      <path d="M3 3l18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M7.5 7.8C4.4 9.4 2.5 12 2.5 12s3.5 6 9.5 6c1.6 0 3-.4 4.2-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21.5 12s-3.5-6-9.5-6c-.9 0-1.8.1-2.6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PasswordField({
+  value,
+  onChange,
+  placeholder,
+  visible,
+  onToggle,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  visible: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label className="relative block">
+      <input
+        value={value}
+        onChange={(event) => onChange(sanitizePassword(event.target.value))}
+        placeholder={placeholder}
+        type={visible ? "text" : "password"}
+        maxLength={12}
+        autoComplete="current-password"
+        className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 pr-14 text-[16px] font-semibold outline-none focus:border-sos-orange"
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-pill text-sos-muted"
+        aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+      >
+        <PasswordToggleIcon visible={visible} />
+      </button>
+    </label>
+  );
+}
+
 export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
@@ -101,56 +157,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     setView(viewName);
     setError("");
     setInfo("");
-  }
-
-  function PasswordToggleIcon({ visible }: { visible: boolean }) {
-    return visible ? (
-      <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ) : (
-      <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <path d="M7.5 7.8C4.4 9.4 2.5 12 2.5 12s3.5 6 9.5 6c1.6 0 3-.4 4.2-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M21.5 12s-3.5-6-9.5-6c-.9 0-1.8.1-2.6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-
-  function PasswordField({
-    value,
-    onChange,
-    placeholder,
-    visible,
-    onToggle,
-  }: {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder: string;
-    visible: boolean;
-    onToggle: () => void;
-  }) {
-    return (
-      <label className="relative block">
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          type={visible ? "text" : "password"}
-          className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 pr-14 text-[16px] font-semibold outline-none focus:border-sos-orange"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-pill text-sos-muted"
-          aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
-        >
-          <PasswordToggleIcon visible={visible} />
-        </button>
-      </label>
-    );
   }
 
   if (view === "signup") {
