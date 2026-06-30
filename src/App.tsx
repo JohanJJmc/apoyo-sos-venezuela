@@ -312,7 +312,7 @@ function App() {
             onManualLocationPreview={previewManualLocation}
           />
           {!pickingLocation && (
-            <div className="absolute right-4 top-1/2 z-[910] flex -translate-y-1/2 flex-col gap-3">
+            <div className="fixed right-4 top-1/2 z-[910] flex -translate-y-1/2 flex-col gap-3">
               <button
                 type="button"
                 onClick={() => setIsMapFilterOpen((open) => !open)}
