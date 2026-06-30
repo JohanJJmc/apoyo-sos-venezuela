@@ -13,6 +13,7 @@ import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBo
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SupportOfferForm } from "./components/SupportOfferForm";
 import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
+import { authService } from "./services/authService";
 import { reverseGeocodeAddress } from "./services/geocodeService";
 import { requestService } from "./services/requestService";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
@@ -57,6 +58,13 @@ function App() {
   useEffect(() => {
     void reloadRequests();
   }, [reloadRequests]);
+
+  useEffect(() => {
+    if (session) return;
+    void authService.getSupabaseSession().then((nextSession) => {
+      if (nextSession) setSession(nextSession);
+    });
+  }, [session]);
 
   useEffect(() => {
     function updateOnlineStatus() {
@@ -288,6 +296,41 @@ function App() {
     void reloadRequests();
   }
 
+  async function handleSignOut() {
+    await authService.signOut();
+    setSession(null);
+    setRequests([]);
+  }
+
+  async function handleChangeEmail() {
+    const nextEmail = window.prompt("Ingresa el nuevo correo:");
+    if (!nextEmail) return;
+
+    try {
+      const nextSession = await authService.updateEmail(nextEmail);
+      if (nextSession) setSession(nextSession);
+      window.alert("Revisa tu correo para confirmar el cambio.");
+    } catch (nextError) {
+      window.alert(nextError instanceof Error ? nextError.message : "No se pudo cambiar el correo.");
+    }
+  }
+
+  async function handleDeleteAccountData() {
+    const confirmed = window.confirm(
+      "Esto borrará tus solicitudes y apoyos asociados a esta cuenta. ¿Quieres continuar?",
+    );
+    if (!confirmed) return;
+
+    try {
+      await requestService.deleteCurrentUserData();
+      await authService.signOut();
+      setSession(null);
+      setRequests([]);
+    } catch (nextError) {
+      window.alert(nextError instanceof Error ? nextError.message : "No se pudieron borrar los datos.");
+    }
+  }
+
   if (!session) {
     return <LoginScreen onLogin={handleLogin} />;
   }
@@ -297,7 +340,11 @@ function App() {
       <AppHeader
         activeView={activeView}
         isOffline={isOffline}
+        session={session}
         onChangeView={setActiveView}
+        onSignOut={handleSignOut}
+        onChangeEmail={handleChangeEmail}
+        onDeleteAccountData={handleDeleteAccountData}
       />
 
       {activeView === "map" && (

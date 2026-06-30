@@ -44,9 +44,11 @@ alter table public.support_reports enable row level security;
 drop policy if exists "public read requests" on public.requests;
 drop policy if exists "public insert requests" on public.requests;
 drop policy if exists "public update requests" on public.requests;
+drop policy if exists "public delete requests" on public.requests;
 drop policy if exists "public read support reports" on public.support_reports;
 drop policy if exists "public insert support reports" on public.support_reports;
 drop policy if exists "public update support reports" on public.support_reports;
+drop policy if exists "public delete support reports" on public.support_reports;
 
 create policy "public read requests"
 on public.requests for select
@@ -64,6 +66,11 @@ to anon
 using (true)
 with check (true);
 
+create policy "public delete requests"
+on public.requests for delete
+to anon
+using (true);
+
 create policy "public read support reports"
 on public.support_reports for select
 to anon
@@ -79,6 +86,11 @@ on public.support_reports for update
 to anon
 using (true)
 with check (true);
+
+create policy "public delete support reports"
+on public.support_reports for delete
+to anon
+using (true);
 
 create index if not exists requests_status_idx on public.requests(status);
 create index if not exists requests_category_idx on public.requests(category);

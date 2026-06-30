@@ -211,4 +211,15 @@ export const requestService = {
     const { error: reportError } = await supabase.from("support_reports").update({ status }).eq("id", latestReport.id);
     if (reportError) throw reportError;
   },
+
+  async deleteCurrentUserData() {
+    if (!supabase) return localRequestStore.deleteCurrentUserData();
+
+    const userId = getCurrentUserId();
+    const { error: supportError } = await supabase.from("support_reports").delete().eq("supporter_id", userId);
+    if (supportError) throw supportError;
+
+    const { error: requestError } = await supabase.from("requests").delete().eq("created_by", userId);
+    if (requestError) throw requestError;
+  },
 };

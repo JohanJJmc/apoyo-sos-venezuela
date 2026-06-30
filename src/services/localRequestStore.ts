@@ -190,4 +190,14 @@ export const localRequestStore = {
       }),
     );
   },
+
+  deleteCurrentUserData() {
+    const userId = getCurrentUserId();
+    write(
+      read().filter((request) => request.createdBy !== userId).map((request) => ({
+        ...request,
+        supportReports: request.supportReports.filter((report) => report.supporterId !== userId),
+      })),
+    );
+  },
 };

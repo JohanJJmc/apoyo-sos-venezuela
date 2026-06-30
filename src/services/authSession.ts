@@ -1,8 +1,11 @@
 const SESSION_KEY = "apoyo-sos-session";
 
 export interface AppSession {
+  userId: string;
+  email?: string;
   name?: string;
-  phone: string;
+  phone?: string;
+  isAnonymous?: boolean;
 }
 
 export function getStoredSession(): AppSession | null {
@@ -10,7 +13,11 @@ export function getStoredSession(): AppSession | null {
   if (!raw) return null;
 
   try {
-    return JSON.parse(raw) as AppSession;
+    const session = JSON.parse(raw) as AppSession;
+    if (!session.userId && session.phone) {
+      return { ...session, userId: session.phone };
+    }
+    return session;
   } catch {
     localStorage.removeItem(SESSION_KEY);
     return null;
@@ -26,5 +33,16 @@ export function clearSession() {
 }
 
 export function getCurrentUserId() {
-  return getStoredSession()?.phone || "anonymous-device";
+  return getStoredSession()?.userId || "anonymous-device";
+}
+
+export function createAnonymousSession(): AppSession {
+  const stored = getStoredSession();
+  if (stored?.isAnonymous) return stored;
+
+  return {
+    userId: `anonymous-${crypto.randomUUID()}`,
+    email: "anonimo@nexo.local",
+    isAnonymous: true,
+  };
 }
