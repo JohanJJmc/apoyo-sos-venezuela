@@ -7,6 +7,7 @@ interface MapScreenProps {
   requests: Request[];
   userLocation?: Coordinates;
   pickingLocation: boolean;
+  recenterSignal: number;
   onSelectRequest: (request: Request) => void;
   onCenterChange: (location: Coordinates) => void;
   onManualLocationPreview: (location: Coordinates) => void;
@@ -18,6 +19,7 @@ export function MapScreen({
   requests,
   userLocation,
   pickingLocation,
+  recenterSignal,
   onSelectRequest,
   onCenterChange,
   onManualLocationPreview,
@@ -44,6 +46,11 @@ export function MapScreen({
     didCenterOnUser.current = true;
     map.current.setView([userLocation.latitude, userLocation.longitude], 14);
   }, [userLocation]);
+
+  useEffect(() => {
+    if (!map.current || !userLocation || recenterSignal === 0) return;
+    map.current.setView([userLocation.latitude, userLocation.longitude], 15);
+  }, [recenterSignal, userLocation]);
 
   useEffect(() => {
     if (!map.current || !markers.current) return;

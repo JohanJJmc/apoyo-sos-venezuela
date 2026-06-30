@@ -39,6 +39,8 @@ function App() {
   const [isDetectingMapCenterAddress, setIsDetectingMapCenterAddress] = useState(false);
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
+  const [recenterSignal, setRecenterSignal] = useState(0);
   const [formError, setFormError] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const manualGeocodeRequest = useRef(0);
@@ -304,10 +306,46 @@ function App() {
             requests={visibleRequests}
             userLocation={userLocation}
             pickingLocation={pickingLocation}
+            recenterSignal={recenterSignal}
             onSelectRequest={setSelectedRequest}
             onCenterChange={handleMapCenterChange}
             onManualLocationPreview={previewManualLocation}
           />
+          {!pickingLocation && (
+            <div className="absolute bottom-36 right-4 z-[910] flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setIsMapFilterOpen((open) => !open)}
+                className={`grid h-12 w-12 place-items-center rounded-pill border text-[22px] shadow-soft ${
+                  isMapFilterOpen ? "border-sos-orange bg-sos-orange text-white" : "border-sos-border bg-white text-sos-ink"
+                }`}
+                aria-label="Abrir filtros"
+                aria-expanded={isMapFilterOpen}
+              >
+                ⌘
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!userLocation) {
+                    setLocationMessage("No se pudo acceder al GPS. Revisa el permiso de ubicacion.");
+                    return;
+                  }
+                  setRecenterSignal((value) => value + 1);
+                }}
+                className="grid h-12 w-12 place-items-center rounded-pill border border-sos-border bg-white text-[22px] text-sos-ink shadow-soft disabled:opacity-50"
+                aria-label="Centrar mapa en mi ubicacion"
+                disabled={!userLocation}
+              >
+                ◎
+              </button>
+            </div>
+          )}
+          {isMapFilterOpen && !pickingLocation && (
+            <div className="absolute left-4 right-20 top-4 z-[910]">
+              <FilterChips filters={filters} onChange={setFilters} placement="static" />
+            </div>
+          )}
           {!pickingLocation && (
             <HomeActionPanel
               locationReady={Boolean(userLocation || manualLocation)}
