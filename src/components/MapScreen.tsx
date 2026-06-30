@@ -9,7 +9,7 @@ interface MapScreenProps {
   manualLocation?: Coordinates;
   pickingLocation: boolean;
   onSelectRequest: (request: Request) => void;
-  onManualLocationChange: (location: Coordinates) => void;
+  onManualLocationPreview: (location: Coordinates) => void;
 }
 
 const DEFAULT_CENTER: Coordinates = { latitude: 10.5, longitude: -66.9167 };
@@ -20,7 +20,7 @@ export function MapScreen({
   manualLocation,
   pickingLocation,
   onSelectRequest,
-  onManualLocationChange,
+  onManualLocationPreview,
 }: MapScreenProps) {
   const mapElement = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
@@ -56,18 +56,34 @@ export function MapScreen({
   }, [requests, onSelectRequest]);
 
   useEffect(() => {
+    if (!map.current || !pickingLocation) return;
+
+    const emitCenter = () => {
+      const centerPoint = map.current!.getCenter();
+      onManualLocationPreview({ latitude: centerPoint.lat, longitude: centerPoint.lng });
+    };
+
+    emitCenter();
+    map.current.on("moveend zoomend", emitCenter);
+    return () => {
+      map.current?.off("moveend zoomend", emitCenter);
+    };
+  }, [pickingLocation, onManualLocationPreview]);
+
+  useEffect(() => {
     if (!map.current) return;
 
     function handleClick(event: L.LeafletMouseEvent) {
       if (!pickingLocation) return;
-      onManualLocationChange({ latitude: event.latlng.lat, longitude: event.latlng.lng });
+      map.current?.panTo(event.latlng);
+      onManualLocationPreview({ latitude: event.latlng.lat, longitude: event.latlng.lng });
     }
 
     map.current.on("click", handleClick);
     return () => {
       map.current?.off("click", handleClick);
     };
-  }, [pickingLocation, onManualLocationChange]);
+  }, [pickingLocation, onManualLocationPreview]);
 
   useEffect(() => {
     if (!map.current) return;
@@ -90,8 +106,8 @@ export function MapScreen({
       {pickingLocation && (
         <div className="pointer-events-none absolute inset-0 z-[500] bg-[linear-gradient(rgba(16,42,67,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(16,42,67,0.16)_1px,transparent_1px)] bg-[size:44px_44px]">
           <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-pill border-4 border-white bg-sos-pending shadow-marker" />
-          <p className="absolute left-1/2 top-[calc(50%+34px)] -translate-x-1/2 rounded-pill bg-white px-3 py-1 text-[13px] font-extrabold text-sos-ink shadow-soft">
-            Toca el mapa para fijar el pin
+          <p className="absolute left-1/2 top-[calc(50%+34px)] w-max max-w-[82vw] -translate-x-1/2 rounded-pill bg-white px-3 py-1 text-center text-[13px] font-extrabold text-sos-ink shadow-soft">
+            Mueve el mapa hasta ubicar el pin
           </p>
         </div>
       )}

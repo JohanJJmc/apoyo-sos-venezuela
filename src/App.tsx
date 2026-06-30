@@ -205,7 +205,7 @@ function App() {
   function startManualLocation() {
     setActiveView("map");
     setPickingLocation(true);
-    setFormError("Toca el mapa para ajustar la ubicacion.");
+    setFormError("");
   }
 
   function cancelManualLocation() {
@@ -214,11 +214,14 @@ function App() {
     setFormError("");
   }
 
-  function changeManualLocation(location: Coordinates) {
+  function previewManualLocation(location: Coordinates) {
     setManualLocation(location);
+    void reverseGeocode(location);
+  }
+
+  function confirmManualLocation() {
     setPickingLocation(false);
     setFormError("");
-    void reverseGeocode(location);
   }
 
   function handleLogin(nextSession: AppSession) {
@@ -247,9 +250,9 @@ function App() {
             manualLocation={manualLocation}
             pickingLocation={pickingLocation}
             onSelectRequest={setSelectedRequest}
-            onManualLocationChange={changeManualLocation}
+            onManualLocationPreview={previewManualLocation}
           />
-          <HomeActionPanel locationReady={Boolean(userLocation || manualLocation)} onClick={openForm} />
+          {!pickingLocation && <HomeActionPanel locationReady={Boolean(userLocation || manualLocation)} onClick={openForm} />}
         </section>
       )}
 
@@ -306,6 +309,31 @@ function App() {
         pickingLocation={pickingLocation}
         error={formError}
       />
+
+      {pickingLocation && (
+        <div className="absolute inset-x-4 bottom-5 z-[1200] rounded-card bg-white p-4 text-center shadow-sheet">
+          <p className="text-[13px] font-extrabold text-[#00A651]">Ubicación manual</p>
+          <p className="mt-1 line-clamp-2 text-[14px] font-semibold text-sos-muted">
+            {detectedAddress || "Mueve el mapa para detectar la dirección"}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={cancelManualLocation}
+              className="min-h-12 rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-muted"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={confirmManualLocation}
+              className="sos-gradient min-h-12 rounded-pill px-4 text-[15px] font-extrabold text-white shadow-soft"
+            >
+              Usar esta ubicación
+            </button>
+          </div>
+        </div>
+      )}
 
       <SimilarRequestDialog
         request={similarRequest}

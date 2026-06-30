@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORY_ITEMS, CATEGORIES } from "../data/categories";
 import type { Coordinates, Request } from "../types/request";
 import { CategoryDropdown } from "./CategoryDropdown";
@@ -60,6 +60,7 @@ export function RequestFormModal({
   const [address, setAddress] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<Array<{ label: string; latitude: number; longitude: number }>>([]);
   const [addressLocation, setAddressLocation] = useState<Coordinates | undefined>();
+  const wasOpen = useRef(false);
 
   const hasPreciseLocation = Boolean(selectedLocation ?? currentLocation);
   const location = selectedLocation ?? addressLocation ?? currentLocation ?? FALLBACK_LOCATION;
@@ -72,7 +73,12 @@ export function RequestFormModal({
   }, [location]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasOpen.current = false;
+      return;
+    }
+    if (wasOpen.current) return;
+    wasOpen.current = true;
     setCategory(CATEGORIES[0]);
     setItem(CATEGORY_ITEMS[CATEGORIES[0]][0]);
     setQuantity("");
@@ -86,6 +92,11 @@ export function RequestFormModal({
     setAddressLocation(undefined);
     setAddressSuggestions([]);
   }, [initialAddress, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !pickingLocation || !initialAddress) return;
+    setAddress(initialAddress);
+  }, [initialAddress, isOpen, pickingLocation]);
 
   useEffect(() => {
     if (!isOpen || address.trim().length < 4) {
@@ -166,9 +177,9 @@ export function RequestFormModal({
   }
 
   return (
-    <div className="absolute inset-0 z-[1000] bg-white">
+    <div className={`absolute inset-0 z-[1000] ${pickingLocation ? "pointer-events-none bg-transparent" : "bg-white"}`}>
       <section
-        className="h-full overflow-y-auto px-7 pb-7 pt-20"
+        className={`h-full overflow-y-auto px-7 pb-7 pt-20 ${pickingLocation ? "hidden" : ""}`}
       >
         <button type="button" onClick={onClose} className="absolute left-7 top-10 grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
           ‹
@@ -263,7 +274,7 @@ export function RequestFormModal({
             <p className="sr-only">{locationText}</p>
             {pickingLocation && (
               <p className="mt-2 rounded-input bg-sos-primarySoft px-3 py-2 text-[13px] font-bold text-sos-primary">
-                Toca el mapa detras del formulario para mover la ubicacion.
+                Mueve el mapa hasta que la reticula quede sobre el punto correcto.
               </p>
             )}
           </section>
