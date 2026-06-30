@@ -58,12 +58,10 @@ export function RequestFormModal({
   const [requesterPhone, setRequesterPhone] = useState("");
   const [requesterAnonymous, setRequesterAnonymous] = useState(false);
   const [address, setAddress] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState<Array<{ label: string; latitude: number; longitude: number }>>([]);
-  const [addressLocation, setAddressLocation] = useState<Coordinates | undefined>();
   const wasOpen = useRef(false);
 
   const hasPreciseLocation = Boolean(selectedLocation ?? currentLocation);
-  const location = selectedLocation ?? addressLocation ?? currentLocation ?? FALLBACK_LOCATION;
+  const location = selectedLocation ?? currentLocation ?? FALLBACK_LOCATION;
   const quantityNumber = Number(quantity);
   const canSubmit = Boolean(category && item && quantityNumber > 0);
 
@@ -89,46 +87,12 @@ export function RequestFormModal({
     setRequesterPhone("");
     setRequesterAnonymous(false);
     setAddress(initialAddress ?? "");
-    setAddressLocation(undefined);
-    setAddressSuggestions([]);
   }, [initialAddress, isOpen]);
 
   useEffect(() => {
     if (!isOpen || !pickingLocation || !initialAddress) return;
     setAddress(initialAddress);
   }, [initialAddress, isOpen, pickingLocation]);
-
-  useEffect(() => {
-    if (!isOpen || address.trim().length < 4) {
-      setAddressSuggestions([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = window.setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&limit=4&countrycodes=ve&q=${encodeURIComponent(address)}`,
-          { signal: controller.signal },
-        );
-        const results = (await response.json()) as Array<{ display_name: string; lat: string; lon: string }>;
-        setAddressSuggestions(
-          results.map((result) => ({
-            label: result.display_name,
-            latitude: Number(result.lat),
-            longitude: Number(result.lon),
-          })),
-        );
-      } catch {
-        if (!controller.signal.aborted) setAddressSuggestions([]);
-      }
-    }, 450);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timeout);
-    };
-  }, [address, isOpen]);
 
   if (!isOpen) return null;
 
@@ -246,25 +210,13 @@ export function RequestFormModal({
 
           <section>
             <p className="mb-2 text-[14px] font-extrabold text-sos-muted">Ubicación</p>
-            <TextInput label="" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Dirección o punto de referencia" />
-            {addressSuggestions.length > 0 && (
-              <div className="mt-2 overflow-hidden rounded-input border border-sos-border bg-white shadow-soft">
-                {addressSuggestions.map((suggestion) => (
-                  <button
-                    key={`${suggestion.latitude}-${suggestion.longitude}-${suggestion.label}`}
-                    type="button"
-                    onClick={() => {
-                      setAddress(suggestion.label);
-                      setAddressLocation({ latitude: suggestion.latitude, longitude: suggestion.longitude });
-                      setAddressSuggestions([]);
-                    }}
-                    className="block w-full border-b border-sos-border px-3 py-2 text-left text-[13px] font-semibold text-sos-ink last:border-b-0"
-                  >
-                    {suggestion.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <TextInput
+              label=""
+              value={address}
+              readOnly
+              placeholder="Dirección detectada automáticamente"
+              className="cursor-default bg-white text-sos-ink"
+            />
             <button type="button" onClick={onUseManualLocation} className="mt-2 text-[15px] font-extrabold text-[#00A651]">
               {hasPreciseLocation ? "Ubicación detectada ✓" : "Usando ubicación aproximada ✓"}
             </button>
