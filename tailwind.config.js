@@ -34,8 +34,8 @@ export default {
       },
       fontFamily: {
         sans: [
-          "Inter",
           "Nunito Sans",
+          "Nunito",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
