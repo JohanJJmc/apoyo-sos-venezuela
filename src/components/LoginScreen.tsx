@@ -12,7 +12,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   return (
     <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
-      <img src="/assets/logo-sos-ve.svg" alt="SOS Venezuela" className="mx-auto h-16 w-auto" />
+      <img src="/assets/nexo-logo.svg" alt="NEXO" className="mx-auto h-16 w-16 rounded-[12px]" />
       <section className="mt-14">
         <h1 className="text-center text-[24px] font-extrabold">Entrar con teléfono</h1>
         <p className="mx-auto mt-2 max-w-xs text-center text-[15px] font-semibold text-sos-muted">

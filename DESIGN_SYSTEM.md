@@ -1,4 +1,4 @@
-# Apoyo SOS Venezuela - Sistema de diseño
+# NEXO - Sistema de diseño
 
 ## Personalidad visual
 

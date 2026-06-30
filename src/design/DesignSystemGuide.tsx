@@ -11,7 +11,7 @@ export function DesignSystemGuide() {
       <section className="mx-auto max-w-md space-y-6">
         <header>
           <p className="text-[13px] font-extrabold uppercase text-sos-primary">Sistema visual</p>
-          <h1 className="text-[24px] font-extrabold">Apoyo SOS Venezuela</h1>
+          <h1 className="text-[24px] font-extrabold">NEXO</h1>
           <p className="mt-1 text-[15px] font-semibold text-sos-muted">
             Humano, confiable, simple y optimizado para emergencias.
           </p>
