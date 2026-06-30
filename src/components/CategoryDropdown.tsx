@@ -23,7 +23,7 @@ export function CategoryDropdown({ category, item, onCategoryChange, onItemChang
           <select
             value={category}
             onChange={(event) => onCategoryChange(event.target.value)}
-            className="min-h-12 w-full appearance-none rounded-input border border-sos-border bg-sos-background px-12 text-[16px] font-semibold text-sos-ink outline-none focus:border-sos-orange"
+            className="min-h-12 w-full appearance-none rounded-input border border-sos-border bg-sos-background py-3 pl-12 pr-12 text-[16px] font-semibold text-sos-ink outline-none transition focus:border-sos-orange focus:ring-4 focus:ring-[#F27405]/10"
           >
             {CATEGORIES.map((name) => (
               <option key={name} value={name}>
@@ -31,7 +31,14 @@ export function CategoryDropdown({ category, item, onCategoryChange, onItemChang
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-2xl text-sos-muted">⌄</span>
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-sos-muted"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
       </div>
       <SelectInput
