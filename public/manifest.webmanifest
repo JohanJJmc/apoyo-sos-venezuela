@@ -9,7 +9,7 @@
   "icons": [
     {
       "src": "/assets/nexo-logo.svg",
-      "sizes": "108x108",
+      "sizes": "400x400",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
