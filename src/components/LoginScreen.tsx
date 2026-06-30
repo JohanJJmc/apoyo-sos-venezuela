@@ -18,6 +18,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -101,6 +103,56 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     setInfo("");
   }
 
+  function PasswordToggleIcon({ visible }: { visible: boolean }) {
+    return visible ? (
+      <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ) : (
+      <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M7.5 7.8C4.4 9.4 2.5 12 2.5 12s3.5 6 9.5 6c1.6 0 3-.4 4.2-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21.5 12s-3.5-6-9.5-6c-.9 0-1.8.1-2.6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  function PasswordField({
+    value,
+    onChange,
+    placeholder,
+    visible,
+    onToggle,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder: string;
+    visible: boolean;
+    onToggle: () => void;
+  }) {
+    return (
+      <label className="relative block">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          type={visible ? "text" : "password"}
+          className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 pr-14 text-[16px] font-semibold outline-none focus:border-sos-orange"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-pill text-sos-muted"
+          aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        >
+          <PasswordToggleIcon visible={visible} />
+        </button>
+      </label>
+    );
+  }
+
   if (view === "signup") {
     return (
       <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
@@ -114,8 +166,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
         <div className="mt-8 space-y-3">
           <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Ingresa tu contraseña" type="password" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} placeholder="Confirma tu contraseña" type="password" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <PasswordField value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />
+          <PasswordField value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} />
         </div>
 
         {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
@@ -167,7 +219,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
       <div className="mt-8 space-y-3">
         <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-        <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Ingresa tu contraseña" type="password" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+        <PasswordField value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />
       </div>
 
       <button type="button" className="mt-6 text-center text-[14px] font-extrabold text-sos-ink">
