@@ -34,10 +34,13 @@ function App() {
   const [detectedAddress, setDetectedAddress] = useState("");
   const [manualAddress, setManualAddress] = useState("");
   const [isDetectingManualAddress, setIsDetectingManualAddress] = useState(false);
+  const [mapCenterAddress, setMapCenterAddress] = useState("");
+  const [isDetectingMapCenterAddress, setIsDetectingMapCenterAddress] = useState(false);
   const [search, setSearch] = useState("");
   const [formError, setFormError] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const manualGeocodeRequest = useRef(0);
+  const mapGeocodeRequest = useRef(0);
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -135,6 +138,25 @@ function App() {
     }
   }, []);
 
+  const reverseGeocodeMapCenter = useCallback(async (location: Coordinates) => {
+    const requestId = mapGeocodeRequest.current + 1;
+    mapGeocodeRequest.current = requestId;
+    setIsDetectingMapCenterAddress(true);
+
+    try {
+      const address = await getAddressForLocation(location);
+      if (mapGeocodeRequest.current === requestId) {
+        setMapCenterAddress(address || `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+      }
+    } catch {
+      if (mapGeocodeRequest.current === requestId) {
+        setMapCenterAddress(`${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+      }
+    } finally {
+      if (mapGeocodeRequest.current === requestId) setIsDetectingMapCenterAddress(false);
+    }
+  }, []);
+
   const visibleRequests = useMemo(
     () =>
       requests.filter((request) => {
@@ -168,6 +190,7 @@ function App() {
     setFormError("");
     setSimilarRequest(null);
     setPendingDraft(null);
+    if (mapCenterAddress) setDetectedAddress(mapCenterAddress);
     setIsFormOpen(true);
   }
 
@@ -252,6 +275,11 @@ function App() {
     void reverseGeocodeManual(location);
   }, [reverseGeocodeManual]);
 
+  const handleMapCenterChange = useCallback((location: Coordinates) => {
+    setManualLocation(location);
+    void reverseGeocodeMapCenter(location);
+  }, [reverseGeocodeMapCenter]);
+
   function confirmManualLocation() {
     if (manualAddress) setDetectedAddress(manualAddress);
     setPickingLocation(false);
@@ -284,9 +312,17 @@ function App() {
             manualLocation={manualLocation}
             pickingLocation={pickingLocation}
             onSelectRequest={setSelectedRequest}
+            onCenterChange={handleMapCenterChange}
             onManualLocationPreview={previewManualLocation}
           />
-          {!pickingLocation && <HomeActionPanel locationReady={Boolean(userLocation || manualLocation)} onClick={openForm} />}
+          {!pickingLocation && (
+            <HomeActionPanel
+              locationReady={Boolean(userLocation || manualLocation)}
+              address={mapCenterAddress}
+              isDetectingAddress={isDetectingMapCenterAddress}
+              onClick={openForm}
+            />
+          )}
         </section>
       )}
 
@@ -331,7 +367,7 @@ function App() {
         isOpen={isFormOpen}
         currentLocation={userLocation}
         selectedLocation={manualLocation}
-        initialAddress={manualAddress || detectedAddress}
+        initialAddress={manualAddress || mapCenterAddress || detectedAddress}
         similarRequest={similarRequest}
         onClose={() => {
           setIsFormOpen(false);
