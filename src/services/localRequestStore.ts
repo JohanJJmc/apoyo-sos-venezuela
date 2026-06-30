@@ -1,9 +1,8 @@
 import type { Comment, Coordinates, Request, SupportReport } from "../types/request";
 import { distanceInMeters } from "../utils/distance";
+import { getCurrentUserId } from "./authSession";
 
 const STORAGE_KEY = "apoyo-sos-requests";
-const DEFAULT_USER_ID = "local-user";
-
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
 
@@ -84,7 +83,9 @@ function write(requests: Request[]) {
 }
 
 export const localRequestStore = {
-  currentUserId: DEFAULT_USER_ID,
+  get currentUserId() {
+    return getCurrentUserId();
+  },
 
   listRequests() {
     return read();
@@ -98,7 +99,7 @@ export const localRequestStore = {
       status: "pending",
       partialSupport: false,
       createdAt: now(),
-      createdBy: DEFAULT_USER_ID,
+      createdBy: getCurrentUserId(),
       comments: [],
       supportReports: [],
     };
@@ -121,7 +122,7 @@ export const localRequestStore = {
     const comment: Comment = {
       id: id(),
       requestId,
-      userId: DEFAULT_USER_ID,
+      userId: getCurrentUserId(),
       text,
       createdAt: now(),
     };
@@ -142,7 +143,7 @@ export const localRequestStore = {
     const report: SupportReport = {
       id: id(),
       requestId,
-      supporterId: DEFAULT_USER_ID,
+      supporterId: getCurrentUserId(),
       ...input,
       status: "pending_confirmation",
       createdAt: now(),

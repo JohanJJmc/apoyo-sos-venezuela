@@ -1,5 +1,6 @@
 import type { Coordinates, Request, SupportReport } from "../types/request";
 import { distanceInMeters } from "../utils/distance";
+import { getCurrentUserId } from "./authSession";
 import { localRequestStore } from "./localRequestStore";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
@@ -38,8 +39,6 @@ type SupportReportRow = {
   status: "pending_confirmation" | "confirmed" | "rejected" | "partial";
   created_at: string;
 };
-
-const DEFAULT_USER_ID = "local-user";
 
 function mapRequest(row: RequestRow, supportReports: SupportReportRow[] = []): Request {
   return {
@@ -94,7 +93,7 @@ function requestToInsert(
     longitude: input.longitude,
     status: "pending" as const,
     partial_support: false,
-    created_by: DEFAULT_USER_ID,
+    created_by: getCurrentUserId(),
     requester_name: input.requesterName ?? null,
     requester_phone: input.requesterPhone ?? null,
     requester_anonymous: input.requesterAnonymous ?? false,
@@ -122,7 +121,9 @@ async function listSupabaseRequests() {
 }
 
 export const requestService = {
-  currentUserId: DEFAULT_USER_ID,
+  get currentUserId() {
+    return getCurrentUserId();
+  },
   isRemoteEnabled: isSupabaseConfigured,
 
   async listRequests() {
@@ -164,7 +165,7 @@ export const requestService = {
       .from("support_reports")
       .insert({
         request_id: requestId,
-        supporter_id: DEFAULT_USER_ID,
+        supporter_id: getCurrentUserId(),
         supporter_name: input.supporterName ?? null,
         supporter_phone: input.supporterPhone ?? null,
         details: input.details ?? null,

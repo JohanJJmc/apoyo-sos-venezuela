@@ -84,5 +84,17 @@ export function MapScreen({
     }).addTo(map.current);
   }, [manualLocation]);
 
-  return <div ref={mapElement} className="h-full w-full" aria-label="Mapa de solicitudes de apoyo" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={mapElement} className="h-full w-full" aria-label="Mapa de solicitudes de apoyo" />
+      {pickingLocation && (
+        <div className="pointer-events-none absolute inset-0 z-[500] bg-[linear-gradient(rgba(16,42,67,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(16,42,67,0.16)_1px,transparent_1px)] bg-[size:44px_44px]">
+          <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-pill border-4 border-white bg-sos-pending shadow-marker" />
+          <p className="absolute left-1/2 top-[calc(50%+34px)] -translate-x-1/2 rounded-pill bg-white px-3 py-1 text-[13px] font-extrabold text-sos-ink shadow-soft">
+            Toca el mapa para fijar el pin
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }

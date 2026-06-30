@@ -11,13 +11,13 @@ interface SupportOfferFormProps {
 }
 
 export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }: SupportOfferFormProps) {
-  const [supporterName, setSupporterName] = useState("Johan meneses");
+  const [supporterName, setSupporterName] = useState("");
   const [supporterPhone, setSupporterPhone] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [details, setDetails] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [photoError, setPhotoError] = useState("");
-  const [address, setAddress] = useState("Av. Lorem ipsum,###, La guaira");
+  const [address, setAddress] = useState("");
 
   const locationText = useMemo(
     () => (currentLocation ? "Ubicación detectada ✓" : "Ubicación detectada ✓"),
@@ -26,13 +26,13 @@ export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }:
 
   useEffect(() => {
     if (!isOpen) return;
-    setSupporterName("Johan meneses");
+    setSupporterName("");
     setSupporterPhone("");
     setAnonymous(false);
     setDetails("");
     setPhotoUrl(undefined);
     setPhotoError("");
-    setAddress("Av. Lorem ipsum,###, La guaira");
+    setAddress("");
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -70,10 +70,33 @@ export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }:
         <div className="space-y-5">
           <section className="space-y-3">
             <p className="text-[14px] font-extrabold text-sos-muted">¿Quién apoya?</p>
-            <TextInput label="" value={supporterName} onChange={(event) => setSupporterName(event.target.value)} placeholder="Nombre" />
-            <TextInput label="" value={supporterPhone} onChange={(event) => setSupporterPhone(event.target.value)} placeholder="📞 Telefono" />
+            <TextInput
+              label=""
+              value={supporterName}
+              disabled={anonymous}
+              onChange={(event) => setSupporterName(event.target.value)}
+              placeholder="Nombre y apellido"
+            />
+            <TextInput
+              label=""
+              value={supporterPhone}
+              disabled={anonymous}
+              onChange={(event) => setSupporterPhone(event.target.value)}
+              placeholder="📞 Telefono"
+            />
             <label className="flex min-h-12 items-center gap-3 rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold text-sos-ink">
-              <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4" />
+              <input
+                type="checkbox"
+                checked={anonymous}
+                onChange={(event) => {
+                  setAnonymous(event.target.checked);
+                  if (event.target.checked) {
+                    setSupporterName("");
+                    setSupporterPhone("");
+                  }
+                }}
+                className="h-4 w-4"
+              />
               Anonimo
             </label>
           </section>
@@ -91,7 +114,7 @@ export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }:
 
           <section>
             <p className="mb-2 text-[14px] font-extrabold text-sos-muted">Ubicación</p>
-            <TextInput label="" value={address} onChange={(event) => setAddress(event.target.value)} />
+            <TextInput label="" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Dirección o punto de referencia" />
             <p className="mt-2 text-[15px] font-extrabold text-[#00A651]">{locationText}</p>
           </section>
 
@@ -99,8 +122,8 @@ export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }:
             type="button"
             onClick={() =>
               onSubmit({
-                supporterName,
-                supporterPhone,
+                supporterName: anonymous ? undefined : supporterName.trim() || undefined,
+                supporterPhone: anonymous ? undefined : supporterPhone.trim() || undefined,
                 anonymous,
                 details,
                 photoUrl,

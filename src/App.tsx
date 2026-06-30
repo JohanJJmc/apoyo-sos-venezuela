@@ -5,17 +5,20 @@ import { EmptyState } from "./components/EmptyState";
 import { FilterChips } from "./components/FilterChips";
 import { FloatingActionButton } from "./components/FloatingActionButton";
 import { HomeActionPanel } from "./components/HomeActionPanel";
+import { LoginScreen } from "./components/LoginScreen";
 import { MapScreen } from "./components/MapScreen";
 import { RequestCard } from "./components/RequestCard";
 import { RequestDetailBottomSheet } from "./components/RequestDetailBottomSheet";
 import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBottomSheet";
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SupportOfferForm } from "./components/SupportOfferForm";
+import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
 import { requestService } from "./services/requestService";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
 
 function App() {
+  const [session, setSession] = useState<AppSession | null>(() => getStoredSession());
   const [requests, setRequests] = useState<Request[]>([]);
   const [filters, setFilters] = useState<Filters>({ showPending: true, showResolved: false, category: "Todas" });
   const [activeView, setActiveView] = useState<AppView>("map");
@@ -28,6 +31,7 @@ function App() {
   const [pickingLocation, setPickingLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [locationMessage, setLocationMessage] = useState("Solicitando ubicacion GPS...");
+  const [detectedAddress, setDetectedAddress] = useState("");
   const [search, setSearch] = useState("");
   const [formError, setFormError] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
@@ -63,20 +67,46 @@ function App() {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        setLocationMessage("Ubicacion detectada.");
-      },
-      () => {
-        setLocationMessage("No se pudo acceder al GPS. Puedes seleccionar ubicacion manualmente.");
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
+    const updatePosition = (position: GeolocationPosition) => {
+      const nextLocation = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+      setUserLocation(nextLocation);
+      setLocationMessage("Ubicacion detectada.");
+      void reverseGeocode(nextLocation);
+    };
+
+    const handlePositionError = () => {
+      setLocationMessage("No se pudo acceder al GPS. Puedes seleccionar ubicacion manualmente.");
+    };
+
+    navigator.geolocation.getCurrentPosition(updatePosition, handlePositionError, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 30000,
+    });
+
+    const watchId = navigator.geolocation.watchPosition(
+      updatePosition,
+      handlePositionError,
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 },
     );
+
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  async function reverseGeocode(location: Coordinates) {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}`,
+      );
+      const result = (await response.json()) as { display_name?: string };
+      if (result.display_name) setDetectedAddress(result.display_name);
+    } catch {
+      setDetectedAddress("");
+    }
+  }
 
   const visibleRequests = useMemo(
     () =>
@@ -88,7 +118,7 @@ function App() {
         const query = search.trim().toLowerCase();
         const searchVisible =
           !query ||
-          [request.category, request.item, request.description, request.address]
+          [request.category, request.item, request.description, request.address, request.requesterName, request.requesterPhone]
             .filter(Boolean)
             .some((value) => String(value).toLowerCase().includes(query));
         return statusVisible && categoryVisible && searchVisible;
@@ -188,6 +218,17 @@ function App() {
     setManualLocation(location);
     setPickingLocation(false);
     setFormError("");
+    void reverseGeocode(location);
+  }
+
+  function handleLogin(nextSession: AppSession) {
+    saveSession(nextSession);
+    setSession(nextSession);
+    void reloadRequests();
+  }
+
+  if (!session) {
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   return (
@@ -253,6 +294,7 @@ function App() {
         isOpen={isFormOpen}
         currentLocation={userLocation}
         selectedLocation={manualLocation}
+        initialAddress={detectedAddress}
         similarRequest={similarRequest}
         onClose={() => {
           setIsFormOpen(false);

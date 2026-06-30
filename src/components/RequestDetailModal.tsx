@@ -22,6 +22,10 @@ export function RequestDetailModal({
 
   const isOwner = request.createdBy === currentUserId;
   const pendingSupport = request.supportReports.some((report) => report.status === "pending_confirmation");
+  const latestSupport = request.supportReports[request.supportReports.length - 1];
+  const requesterContact = request.requesterAnonymous
+    ? "Anonimo"
+    : [request.requesterName, request.requesterPhone].filter(Boolean).join(" - ");
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
@@ -38,9 +42,7 @@ export function RequestDetailModal({
             </p>
             <h2 className="mt-2 text-[20px] font-extrabold leading-tight text-sos-ink">{request.item}</h2>
             <p className="mt-1 text-[16px] font-medium text-sos-ink">{request.address ?? "Av. Lorem ipsum,###, La guaira"}</p>
-            <p className="mt-1 text-[16px] font-medium text-sos-ink">
-              {request.requesterAnonymous ? "Anonimo" : request.requesterName || "Name"} - {request.requesterPhone || "Telefono ######"}
-            </p>
+            {requesterContact && <p className="mt-1 text-[16px] font-medium text-sos-ink">{requesterContact}</p>}
           </div>
           <StatusBadge status={request.status} partialSupport={request.partialSupport} />
         </div>
@@ -54,16 +56,17 @@ export function RequestDetailModal({
 
         <div className="flex-1" />
 
-        {request.supportReports.length > 0 && (
+        {latestSupport && (
           <div className="mb-7 rounded-input bg-sos-resolvedSoft p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[15px] font-extrabold text-sos-ink">
-                  {request.supportReports[request.supportReports.length - 1].supporterName || "Juan Lopez"} Apoyó ya
+                  {latestSupport.anonymous ? "Alguien ofreció apoyo" : `${latestSupport.supporterName || "Persona solidaria"} ofreció apoyo`}
                 </p>
-                <p className="mt-1 text-[15px] font-extrabold text-sos-ink">
-                  {request.supportReports[request.supportReports.length - 1].supporterPhone || "0412 89241232"}
-                </p>
+                {latestSupport.supporterPhone && <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{latestSupport.supporterPhone}</p>}
+                {latestSupport.status === "pending_confirmation" && (
+                  <p className="mt-1 text-[13px] font-extrabold text-sos-primary">Esperando confirmación</p>
+                )}
               </div>
               <span className="text-4xl">→</span>
             </div>
@@ -95,6 +98,10 @@ export function RequestDetailModal({
                   No recibi ayuda
                 </button>
             </>
+          ) : pendingSupport ? (
+            <p className="rounded-input bg-sos-primarySoft px-4 py-3 text-center text-[15px] font-extrabold text-sos-primary">
+              Apoyo ofrecido. Falta que la persona confirme si recibió la ayuda.
+            </p>
           ) : (
             <button
               type="button"
