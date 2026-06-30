@@ -14,6 +14,7 @@ export function FilterChips({ filters, onChange, placement = "static" }: FilterC
         placement === "overlay" ? "absolute left-3 right-3 top-[112px] z-[850]" : ""
       }`}
     >
+      <p className="mb-2 text-[13px] font-extrabold text-sos-muted">Estado</p>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -40,6 +41,7 @@ export function FilterChips({ filters, onChange, placement = "static" }: FilterC
           Ver atendidas
         </button>
       </div>
+      <p className="mb-2 mt-4 text-[13px] font-extrabold text-sos-muted">Categoría</p>
       <select
         value={filters.category}
         onChange={(event) => onChange({ ...filters, category: event.target.value })}

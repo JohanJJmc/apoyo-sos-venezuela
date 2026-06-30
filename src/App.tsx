@@ -38,6 +38,7 @@ function App() {
   const [mapCenterAddress, setMapCenterAddress] = useState("");
   const [isDetectingMapCenterAddress, setIsDetectingMapCenterAddress] = useState(false);
   const [search, setSearch] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const manualGeocodeRequest = useRef(0);
@@ -327,14 +328,29 @@ function App() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Escribe una direccion"
+                  onFocus={() => setIsFilterOpen(true)}
+                  placeholder="Dirección, nombre, categoría o insumo"
                   className="min-w-0 flex-1 bg-transparent text-[16px] outline-none"
                 />
               </label>
-              <button type="button" className="grid h-12 w-12 place-items-center text-2xl text-sos-muted" aria-label="Filtros">
+              <button
+                type="button"
+                onClick={() => setIsFilterOpen((open) => !open)}
+                className={`grid h-12 w-12 place-items-center rounded-pill border text-2xl ${
+                  isFilterOpen ? "border-sos-orange bg-sos-orange text-white" : "border-transparent text-sos-muted"
+                }`}
+                aria-label="Filtros"
+                aria-expanded={isFilterOpen}
+              >
                 ⌘
               </button>
             </div>
+
+            {isFilterOpen && (
+              <div className="mb-5">
+                <FilterChips filters={filters} onChange={setFilters} placement="static" />
+              </div>
+            )}
 
             <div className="space-y-3">
               {(activeView === "requests" ? visibleRequests : visibleMyRequests).length === 0 ? (
@@ -345,10 +361,6 @@ function App() {
                 ))
               )}
             </div>
-          </div>
-
-          <div className="hidden border-t border-sos-border bg-white p-3 pb-24 shadow-sheet">
-            <FilterChips filters={filters} onChange={setFilters} placement="static" />
           </div>
         </section>
       )}
