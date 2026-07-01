@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORY_ITEMS, CATEGORIES } from "../data/categories";
 import { uploadPhoto, validatePhotoFile } from "../services/photoStorageService";
+import { verifyTurnstileToken } from "../services/turnstileService";
 import type { Coordinates, Request } from "../types/request";
 import { CategoryDropdown } from "./CategoryDropdown";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
 import { BackButton } from "./BackButton";
+import { TurnstileWidget } from "./TurnstileWidget";
 
 const FALLBACK_LOCATION: Coordinates = { latitude: 10.5, longitude: -66.9167 };
 
@@ -64,6 +66,7 @@ export function RequestFormModal({
   const [requesterPhone, setRequesterPhone] = useState("");
   const [requesterAnonymous, setRequesterAnonymous] = useState(false);
   const [address, setAddress] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const wasOpen = useRef(false);
 
@@ -93,6 +96,7 @@ export function RequestFormModal({
     setRequesterPhone("");
     setRequesterAnonymous(false);
     setAddress(initialAddress ?? "");
+    setTurnstileToken("");
     setIsSubmitting(false);
   }, [initialAddress, isOpen]);
 
@@ -140,6 +144,7 @@ export function RequestFormModal({
     setIsSubmitting(true);
     setPhotoError("");
     try {
+      await verifyTurnstileToken(turnstileToken);
       let uploadedPhotoUrl = photoUrl;
       if (photoFile) {
         uploadedPhotoUrl = await uploadPhoto(photoFile, "requests");
@@ -248,6 +253,7 @@ export function RequestFormModal({
           )}
           {error && <p className="rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
 
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
           <button
             type="button"
             onClick={submit}

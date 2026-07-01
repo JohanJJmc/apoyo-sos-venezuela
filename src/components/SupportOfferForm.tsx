@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { uploadPhoto, validatePhotoFile } from "../services/photoStorageService";
+import { verifyTurnstileToken } from "../services/turnstileService";
 import type { Coordinates, SupportReport } from "../types/request";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
 import { BackButton } from "./BackButton";
+import { TurnstileWidget } from "./TurnstileWidget";
 
 interface SupportOfferFormProps {
   isOpen: boolean;
@@ -22,6 +24,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [photoFile, setPhotoFile] = useState<File | undefined>();
   const [photoError, setPhotoError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
     setPhotoUrl(undefined);
     setPhotoFile(undefined);
     setPhotoError("");
+    setTurnstileToken("");
     setIsSubmitting(false);
   }, [isOpen]);
 
@@ -67,6 +71,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
     setIsSubmitting(true);
     setPhotoError("");
     try {
+      await verifyTurnstileToken(turnstileToken);
       const uploadedPhotoUrl = photoFile ? await uploadPhoto(photoFile, "support") : photoUrl;
       onSubmit({
         supporterName: anonymous ? undefined : currentUserName.trim() || supporterName.trim() || undefined,
@@ -133,6 +138,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
 
           <PhotoUploader photoUrl={photoUrl} error={photoError} onChange={handlePhoto} />
 
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
           <button
             type="button"
             onClick={submitSupport}

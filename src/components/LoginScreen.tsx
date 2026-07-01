@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { createAnonymousSession, type AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
+import { verifyTurnstileToken } from "../services/turnstileService";
 import { BackButton } from "./BackButton";
+import { TurnstileWidget } from "./TurnstileWidget";
 
 interface LoginScreenProps {
   onLogin: (session: AppSession) => void;
@@ -125,6 +127,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const [resetEmail, setResetEmail] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -172,6 +175,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     setIsLoading(true);
     setError("");
     try {
+      await verifyTurnstileToken(turnstileToken);
       await authService.signUp(cleanSignupEmail, signupPassword, cleanFullName, cleanSignupPhone);
       setInfo(`Te enviamos un correo de confirmación a ${cleanSignupEmail}.`);
       setResendSeconds(60);
@@ -282,6 +286,9 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
         <div className="flex-1" />
 
+        <div className="mb-4">
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
+        </div>
         <button type="button" disabled={!canSignUp || isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Crear cuenta
         </button>
