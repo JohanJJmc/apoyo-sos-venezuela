@@ -123,6 +123,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const [acceptedSafetyTerms, setAcceptedSafetyTerms] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetPassword, setResetPassword] = useState("");
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -218,6 +219,10 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   async function submitResetPassword() {
     if (resetPassword.length < 6) {
       setError("La nueva contraseña debe tener mínimo 6 caracteres.");
+      return;
+    }
+    if (resetPassword !== resetPasswordConfirm) {
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
@@ -322,12 +327,21 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Crea una nueva contraseña para volver a entrar a tu cuenta.
         </p>
 
-        <form className="mt-10" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="mt-10 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <PasswordField
             name="nexo_new_recovery_password"
             value={resetPassword}
             onChange={setResetPassword}
             placeholder="Nueva contraseña"
+            visible={showResetPassword}
+            onToggle={() => setShowResetPassword((visible) => !visible)}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            name="nexo_new_recovery_password_confirm"
+            value={resetPasswordConfirm}
+            onChange={setResetPasswordConfirm}
+            placeholder="Confirma tu contraseña"
             visible={showResetPassword}
             onToggle={() => setShowResetPassword((visible) => !visible)}
             autoComplete="new-password"

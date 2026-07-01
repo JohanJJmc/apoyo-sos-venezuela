@@ -41,6 +41,24 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function isPasswordRecoveryUrl() {
+  const query = new URLSearchParams(window.location.search);
+  const hashText = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+  const hash = new URLSearchParams(hashText);
+
+  return (
+    query.get("auth_action") === "recovery" ||
+    query.get("type") === "recovery" ||
+    hash.get("auth_action") === "recovery" ||
+    hash.get("type") === "recovery"
+  );
+}
+
+function clearAuthActionFromUrl() {
+  if (!window.location.search && !window.location.hash) return;
+  window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+}
+
 function App() {
   const [session, setSession] = useState<AppSession | null>(() => getStoredSession());
   const [requests, setRequests] = useState<Request[]>([]);
@@ -70,7 +88,7 @@ function App() {
   const [toastMessage, setToastMessage] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => isPasswordRecoveryUrl());
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
   const realtimeRefreshTimer = useRef<number | null>(null);
@@ -181,7 +199,7 @@ function App() {
   useEffect(() => {
     if (!supabase) return;
     const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || isPasswordRecoveryUrl()) {
         setIsPasswordRecovery(true);
       }
       if (nextSession?.user) {
@@ -570,20 +588,21 @@ function App() {
     }
   }
 
-  if (!session) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
-
   if (isPasswordRecovery) {
     return (
       <LoginScreen
         onLogin={(nextSession) => {
           handleLogin(nextSession);
           setIsPasswordRecovery(false);
+          clearAuthActionFromUrl();
         }}
         initialView="resetPassword"
       />
     );
+  }
+
+  if (!session) {
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   if (authRequiredForRequest) {

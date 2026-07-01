@@ -20,6 +20,13 @@ function getAuthRedirectUrl() {
   return import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
 }
 
+function getPasswordRecoveryRedirectUrl() {
+  const baseUrl = import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
+  const url = new URL(baseUrl);
+  url.searchParams.set("auth_action", "recovery");
+  return url.toString();
+}
+
 function sessionFromSupabaseUser(user: { id: string; email?: string | null; user_metadata?: { full_name?: string; phone?: string } | null }): AppSession {
   return {
     userId: user.id,
@@ -159,7 +166,7 @@ export const authService = {
     if (!supabase) return;
 
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-      redirectTo: getAuthRedirectUrl(),
+      redirectTo: getPasswordRecoveryRedirectUrl(),
     });
     if (error) throw error;
   },
