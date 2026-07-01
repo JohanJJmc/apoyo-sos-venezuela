@@ -11,6 +11,7 @@ import { MapScreen } from "./components/MapScreen";
 import { RequestCard } from "./components/RequestCard";
 import { RequestDetailBottomSheet } from "./components/RequestDetailBottomSheet";
 import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBottomSheet";
+import { RequiredPhoneScreen } from "./components/RequiredPhoneScreen";
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SupportOfferForm } from "./components/SupportOfferForm";
 import { ToastMessage } from "./components/ToastMessage";
@@ -654,6 +655,20 @@ function App() {
         initialView="signup"
         securityNotice
         onCancel={() => setAuthRequiredForRequest(false)}
+        onNotify={showToast}
+      />
+    );
+  }
+
+  if (!session.isAnonymous && !session.phone) {
+    return (
+      <RequiredPhoneScreen
+        session={session}
+        onComplete={(nextSession) => {
+          setSession(nextSession);
+          saveSession(nextSession);
+        }}
+        onSignOut={handleSignOut}
         onNotify={showToast}
       />
     );
