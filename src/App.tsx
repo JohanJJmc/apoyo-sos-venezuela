@@ -387,6 +387,8 @@ function App() {
   const contentTopClass = isOffline ? "top-48" : "top-44";
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
   const currentUserPhone = session?.phone || "";
+  const mapIsOutsideUserCountry = Boolean(userCountryCode && mapCenterCountryCode && userCountryCode !== mapCenterCountryCode);
+  const outsideCountryMessage = `Solo puedes crear solicitudes dentro de tu país${userCountryName ? ` (${userCountryName})` : ""}.`;
 
   function showToast(message: string, tone: ToastState["tone"] = "info") {
     if (toastTimer.current) {
@@ -832,6 +834,8 @@ function App() {
               locationReady={Boolean(userLocation || manualLocation)}
               address={mapCenterAddress}
               isDetectingAddress={isDetectingMapCenterAddress}
+              disabled={mapIsOutsideUserCountry}
+              disabledMessage={outsideCountryMessage}
               onClick={openForm}
             />
           )}
