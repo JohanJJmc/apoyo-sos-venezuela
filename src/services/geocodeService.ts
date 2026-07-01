@@ -4,6 +4,19 @@ type NominatimResponse = {
   display_name?: string;
 };
 
+type GeoapifyResponse = {
+  features?: Array<{
+    properties?: {
+      formatted?: string;
+      address_line1?: string;
+      address_line2?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
+  }>;
+};
+
 type BigDataCloudResponse = {
   locality?: string;
   city?: string;
@@ -27,6 +40,18 @@ async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T> {
   }
 }
 
+function formatGeoapifyAddress(result: GeoapifyResponse) {
+  const properties = result.features?.[0]?.properties;
+  if (!properties) return "";
+
+  return (
+    properties.formatted ||
+    [properties.address_line1, properties.address_line2, properties.city, properties.state, properties.country]
+      .filter(Boolean)
+      .join(", ")
+  );
+}
+
 function formatBigDataCloudAddress(result: BigDataCloudResponse) {
   const administrativeNames =
     result.localityInfo?.administrative
@@ -47,6 +72,22 @@ function formatBigDataCloudAddress(result: BigDataCloudResponse) {
 }
 
 export async function reverseGeocodeAddress(location: Coordinates) {
+  const geoapifyKey = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined;
+
+  if (geoapifyKey) {
+    const geoapifyUrl =
+      `https://api.geoapify.com/v1/geocode/reverse?format=geojson&lang=es` +
+      `&lat=${location.latitude}&lon=${location.longitude}&apiKey=${encodeURIComponent(geoapifyKey)}`;
+
+    try {
+      const result = await fetchJson<GeoapifyResponse>(geoapifyUrl);
+      const address = formatGeoapifyAddress(result);
+      if (address) return address;
+    } catch {
+      // Try public providers below.
+    }
+  }
+
   const nominatimUrl =
     `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&accept-language=es` +
     `&lat=${location.latitude}&lon=${location.longitude}`;
