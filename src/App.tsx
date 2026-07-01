@@ -102,6 +102,7 @@ function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => isPasswordRecoveryUrl());
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
+  const mapGeocodeTimer = useRef<number | null>(null);
   const realtimeRefreshTimer = useRef<number | null>(null);
   const toastTimer = useRef<number | null>(null);
   const countryWarningRef = useRef("");
@@ -263,40 +264,43 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
+  const requestCurrentLocation = useCallback((options: { recenter?: boolean; reverse?: boolean } = {}) => {
     if (!navigator.geolocation) {
       setLocationMessage("GPS no disponible. Puedes ajustar la ubicacion manualmente.");
       return;
     }
 
-    const updatePosition = (position: GeolocationPosition) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
       const nextLocation = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       };
       setUserLocation(nextLocation);
       setLocationMessage("Ubicacion detectada.");
-      if (!pickingLocation) void reverseGeocode(nextLocation);
-    };
-
-    const handlePositionError = () => {
-      setLocationMessage("No se pudo acceder al GPS. Puedes seleccionar ubicacion manualmente.");
-    };
-
-    navigator.geolocation.getCurrentPosition(updatePosition, handlePositionError, {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 30000,
-    });
-
-    const watchId = navigator.geolocation.watchPosition(
-      updatePosition,
-      handlePositionError,
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 },
+        if (options.reverse !== false) void reverseGeocode(nextLocation);
+        if (options.recenter) setRecenterSignal((value) => value + 1);
+      },
+      () => {
+        setLocationMessage("No se pudo acceder al GPS. Puedes seleccionar ubicacion manualmente.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 30000,
+      },
     );
+  }, []);
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [pickingLocation]);
+  useEffect(() => {
+    requestCurrentLocation();
+  }, [requestCurrentLocation]);
+
+  useEffect(() => {
+    return () => {
+      if (mapGeocodeTimer.current) window.clearTimeout(mapGeocodeTimer.current);
+    };
+  }, []);
 
   async function reverseGeocode(location: Coordinates) {
     try {
@@ -650,8 +654,11 @@ function App() {
   }, [reverseGeocodeManual]);
 
   const handleMapCenterChange = useCallback((location: Coordinates) => {
-    setManualLocation(location);
-    void reverseGeocodeMapCenter(location);
+    if (mapGeocodeTimer.current) window.clearTimeout(mapGeocodeTimer.current);
+    mapGeocodeTimer.current = window.setTimeout(() => {
+      void reverseGeocodeMapCenter(location);
+      mapGeocodeTimer.current = null;
+    }, 650);
   }, [reverseGeocodeMapCenter]);
 
   function confirmManualLocation() {
@@ -810,15 +817,10 @@ function App() {
               <button
                 type="button"
                 onClick={() => {
-                  if (!userLocation) {
-                    setLocationMessage("No se pudo acceder al GPS. Revisa el permiso de ubicacion.");
-                    return;
-                  }
-                  setRecenterSignal((value) => value + 1);
+                  requestCurrentLocation({ recenter: true });
                 }}
-                className="grid h-12 w-12 place-items-center rounded-pill border border-sos-border bg-white text-[22px] text-sos-ink shadow-soft disabled:opacity-50"
+                className="grid h-12 w-12 place-items-center rounded-pill border border-sos-border bg-white text-[22px] text-sos-ink shadow-soft"
                 aria-label="Centrar mapa en mi ubicacion"
-                disabled={!userLocation}
               >
                 ◎
               </button>
