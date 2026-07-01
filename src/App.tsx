@@ -307,25 +307,6 @@ function App() {
     window.setTimeout(() => setToastMessage(""), 6000);
   }
 
-  async function ensurePhoneOnProfile() {
-    if (!session || session.isAnonymous || session.phone) return true;
-
-    const phone = window.prompt("Para seguridad y contacto, ingresa tu teléfono:");
-    if (!phone?.trim()) {
-      showToast("Debes agregar un teléfono para publicar solicitudes u ofrecer apoyo.");
-      return false;
-    }
-
-    try {
-      const nextSession = await authService.updateProfile({ name: session.name, phone });
-      if (nextSession) setSession(nextSession);
-      return true;
-    } catch (nextError) {
-      showToast(getErrorMessage(nextError, "No se pudo guardar el teléfono."));
-      return false;
-    }
-  }
-
   async function handleModerationBlocked(error: unknown) {
     const reason = getErrorMessage(error, "Se detectó texto indebido o riesgoso.");
     const status = await safetyService.recordViolation(reason);
@@ -352,7 +333,6 @@ function App() {
       setAuthRequiredForRequest(true);
       return;
     }
-    if (!(await ensurePhoneOnProfile())) return;
     if (mapCenterAddress) setDetectedAddress(mapCenterAddress);
     setIsFormOpen(true);
   }
@@ -458,11 +438,8 @@ function App() {
         showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.");
         return;
       }
-      void ensurePhoneOnProfile().then((hasPhone) => {
-        if (!hasPhone) return;
-        setSupportRequestId(requestId);
-        setSelectedRequest(null);
-      });
+      setSupportRequestId(requestId);
+      setSelectedRequest(null);
     });
   }
 
