@@ -110,10 +110,13 @@ function PasswordField({
 export function LoginScreen({ onLogin, initialView = "login", securityNotice = false, onCancel }: LoginScreenProps) {
   const [view, setView] = useState<AuthView>(initialView);
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [acceptedSafetyTerms, setAcceptedSafetyTerms] = useState(false);
   const [error, setError] = useState("");
@@ -127,17 +130,24 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     return () => window.clearTimeout(timeout);
   }, [resendSeconds]);
 
-  const cleanEmail = email.trim().toLowerCase();
+  const cleanLoginEmail = loginEmail.trim().toLowerCase();
+  const cleanSignupEmail = signupEmail.trim().toLowerCase();
+  const confirmationEmail = cleanSignupEmail || cleanLoginEmail;
   const cleanFullName = fullName.trim();
-  const canLogin = cleanEmail.length > 4 && password.length >= 6;
-  const canSignUp = cleanFullName.length >= 3 && canLogin && password === passwordConfirm && acceptedSafetyTerms;
+  const canLogin = cleanLoginEmail.length > 4 && loginPassword.length >= 6;
+  const canSignUp =
+    cleanFullName.length >= 3 &&
+    cleanSignupEmail.length > 4 &&
+    signupPassword.length >= 6 &&
+    signupPassword === passwordConfirm &&
+    acceptedSafetyTerms;
 
   async function submitLogin() {
     if (!canLogin) return;
     setIsLoading(true);
     setError("");
     try {
-      onLogin(await authService.signIn(cleanEmail, password));
+      onLogin(await authService.signIn(cleanLoginEmail, loginPassword));
     } catch (nextError) {
       setError(authErrorMessage(nextError));
     } finally {
@@ -153,8 +163,8 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     setIsLoading(true);
     setError("");
     try {
-      await authService.signUp(cleanEmail, password, cleanFullName);
-      setInfo(`Te enviamos un correo de confirmación a ${cleanEmail}.`);
+      await authService.signUp(cleanSignupEmail, signupPassword, cleanFullName);
+      setInfo(`Te enviamos un correo de confirmación a ${cleanSignupEmail}.`);
       setResendSeconds(60);
       setView("verify");
     } catch (nextError) {
@@ -165,11 +175,11 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }
 
   async function resendEmail() {
-    if (!cleanEmail || resendSeconds > 0) return;
+    if (!confirmationEmail || resendSeconds > 0) return;
     setIsLoading(true);
     setError("");
     try {
-      await authService.resendSignupEmail(cleanEmail);
+      await authService.resendSignupEmail(confirmationEmail);
       setInfo("Correo reenviado. Puede tardar hasta 1 minuto.");
       setResendSeconds(60);
     } catch (nextError) {
@@ -193,12 +203,12 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
         </p>
 
-        <div className="mt-8 space-y-3">
-          <input name="nexo_signup_full_name" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input name="nexo_signup_email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <PasswordField name="nexo_signup_password" value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} autoComplete="new-password" />
+        <form className="mt-8 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+          <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <PasswordField name="nexo_register_secret_one" value={signupPassword} onChange={setSignupPassword} placeholder="Ingresa tu contraseña" visible={showSignupPassword} onToggle={() => setShowSignupPassword((visible) => !visible)} autoComplete="new-password" />
           <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />
-        </div>
+        </form>
 
         <div className="mt-5">
           <SecurityNotice />
@@ -242,7 +252,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           <p className="mt-10 text-center text-[18px] font-semibold leading-snug text-sos-ink">
             Te enviamos un email de confirmación al correo:
             <br />
-            {maskEmail(cleanEmail)}. Por favor dale clic al link interno para terminar el registro.
+            {maskEmail(confirmationEmail)}. Por favor dale clic al link interno para terminar el registro.
           </p>
 
           <p className="mt-20 w-full rounded-input bg-[#EAF6FF] p-4 text-[13px] font-extrabold leading-snug text-[#0077C8]">
@@ -275,10 +285,10 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         </div>
       )}
 
-      <div className="mt-8 space-y-3">
-        <input name="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-        <PasswordField name="password" value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} autoComplete="current-password" />
-      </div>
+      <form className="mt-8 space-y-3" autoComplete="on" onSubmit={(event) => event.preventDefault()}>
+        <input name="email" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+        <PasswordField name="password" value={loginPassword} onChange={setLoginPassword} placeholder="Ingresa tu contraseña" visible={showLoginPassword} onToggle={() => setShowLoginPassword((visible) => !visible)} autoComplete="current-password" />
+      </form>
 
       <button type="button" className="mt-6 text-center text-[14px] font-extrabold text-sos-ink">
         Olvidé mi contraseña
