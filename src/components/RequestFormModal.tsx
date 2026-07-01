@@ -138,6 +138,7 @@ export function RequestFormModal({
   async function submit() {
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
+    setPhotoError("");
     try {
       let uploadedPhotoUrl = photoUrl;
       if (photoFile) {
@@ -156,6 +157,8 @@ export function RequestFormModal({
         requesterAnonymous,
         address,
       });
+    } catch (nextError) {
+      setPhotoError(nextError instanceof Error ? nextError.message : "La foto no se pudo subir. Intenta de nuevo sin foto.");
     } finally {
       setIsSubmitting(false);
     }
