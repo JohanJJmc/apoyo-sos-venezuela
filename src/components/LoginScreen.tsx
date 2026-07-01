@@ -285,6 +285,9 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         <button type="button" disabled={!canSignUp || isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Crear cuenta
         </button>
+        <button type="button" onClick={() => goTo("login")} className="mt-5 min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink">
+          Ya tengo cuenta
+        </button>
       </main>
     );
   }
