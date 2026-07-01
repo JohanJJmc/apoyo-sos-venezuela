@@ -6,6 +6,7 @@ import { signedPhotoUrl } from "./photoStorageService";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 export const SIMILAR_REQUEST_RADIUS_METERS = 200;
+export const SUPPORT_CONFIRMATION_TIMEOUT_HOURS = 6;
 
 function throwSupabaseError(error: { message?: string; details?: string | null; hint?: string | null; code?: string } | null) {
   if (!error) return;
@@ -49,7 +50,7 @@ type SupportReportRow = {
   latitude: number | null;
   longitude: number | null;
   anonymous: boolean;
-  status: "pending_confirmation" | "confirmed" | "rejected" | "partial";
+  status: "pending_confirmation" | "confirmed" | "rejected" | "partial" | "expired";
   created_at: string;
 };
 
@@ -135,6 +136,8 @@ function requestToInsert(
 async function listSupabaseRequests() {
   if (!supabase) return [];
 
+  await expirePendingSupportReports();
+
   const [{ data: requests, error: requestError }, { data: supportReports, error: supportError }] = await Promise.all([
     supabase.from("requests").select("*").order("created_at", { ascending: false }),
     supabase.from("support_reports").select("*").order("created_at", { ascending: true }),
@@ -149,6 +152,17 @@ async function listSupabaseRequests() {
       (supportReports as SupportReportRow[]).filter((report) => report.request_id === request.id),
     ),
   ));
+}
+
+async function expirePendingSupportReports() {
+  if (!supabase) return;
+  const expiresBefore = new Date(Date.now() - SUPPORT_CONFIRMATION_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString();
+  const { error } = await supabase
+    .from("support_reports")
+    .update({ status: "expired" })
+    .eq("status", "pending_confirmation")
+    .lt("created_at", expiresBefore);
+  if (error) throw error;
 }
 
 export const requestService = {

@@ -17,7 +17,7 @@ import { SupportOfferForm } from "./components/SupportOfferForm";
 import { ToastMessage } from "./components/ToastMessage";
 import { clearSession, getStoredSession, saveSession, type AppSession } from "./services/authSession";
 import { authService } from "./services/authService";
-import { reverseGeocodeAddress } from "./services/geocodeService";
+import { reverseGeocodeDetails } from "./services/geocodeService";
 import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
 import { requestQueue } from "./services/requestQueue";
 import { requestService } from "./services/requestService";
@@ -81,9 +81,14 @@ function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [locationMessage, setLocationMessage] = useState("Solicitando ubicacion GPS...");
   const [detectedAddress, setDetectedAddress] = useState("");
+  const [userCountryCode, setUserCountryCode] = useState("");
+  const [userCountryName, setUserCountryName] = useState("");
   const [manualAddress, setManualAddress] = useState("");
+  const [manualCountryCode, setManualCountryCode] = useState("");
   const [isDetectingManualAddress, setIsDetectingManualAddress] = useState(false);
   const [mapCenterAddress, setMapCenterAddress] = useState("");
+  const [mapCenterCountryCode, setMapCenterCountryCode] = useState("");
+  const [mapCenterCountryName, setMapCenterCountryName] = useState("");
   const [isDetectingMapCenterAddress, setIsDetectingMapCenterAddress] = useState(false);
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -99,6 +104,7 @@ function App() {
   const mapGeocodeRequest = useRef(0);
   const realtimeRefreshTimer = useRef<number | null>(null);
   const toastTimer = useRef<number | null>(null);
+  const countryWarningRef = useRef("");
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -294,8 +300,10 @@ function App() {
 
   async function reverseGeocode(location: Coordinates) {
     try {
-      const address = await reverseGeocodeAddress(location);
-      if (address) setDetectedAddress(address);
+      const details = await reverseGeocodeDetails(location);
+      if (details.address) setDetectedAddress(details.address);
+      if (details.countryCode) setUserCountryCode(details.countryCode);
+      if (details.countryName) setUserCountryName(details.countryName);
     } catch {
       // Keep the last known address if the provider is temporarily unavailable.
     }
@@ -307,9 +315,10 @@ function App() {
     setIsDetectingManualAddress(true);
 
     try {
-      const address = await reverseGeocodeAddress(location);
+      const details = await reverseGeocodeDetails(location);
       if (manualGeocodeRequest.current === requestId) {
-        setManualAddress(address || "Dirección no encontrada. Mueve un poco el mapa o usa GPS.");
+        setManualAddress(details.address || "Dirección no encontrada. Mueve un poco el mapa o usa GPS.");
+        setManualCountryCode(details.countryCode ?? "");
       }
     } catch {
       if (manualGeocodeRequest.current === requestId) {
@@ -326,9 +335,18 @@ function App() {
     setIsDetectingMapCenterAddress(true);
 
     try {
-      const address = await reverseGeocodeAddress(location);
+      const details = await reverseGeocodeDetails(location);
       if (mapGeocodeRequest.current === requestId) {
-        setMapCenterAddress(address || "Dirección no encontrada. Mueve un poco el mapa.");
+        setMapCenterAddress(details.address || "Dirección no encontrada. Mueve un poco el mapa.");
+        setMapCenterCountryCode(details.countryCode ?? "");
+        setMapCenterCountryName(details.countryName ?? "");
+        if (details.countryCode && userCountryCode && details.countryCode !== userCountryCode) {
+          const warningKey = `${userCountryCode}:${details.countryCode}`;
+          if (countryWarningRef.current !== warningKey) {
+            countryWarningRef.current = warningKey;
+            showToast(`Por veracidad, solo puedes crear solicitudes dentro de tu país${userCountryName ? ` (${userCountryName})` : ""}.`, "info");
+          }
+        }
       }
     } catch {
       if (mapGeocodeRequest.current === requestId) {
@@ -337,7 +355,7 @@ function App() {
     } finally {
       if (mapGeocodeRequest.current === requestId) setIsDetectingMapCenterAddress(false);
     }
-  }, []);
+  }, [userCountryCode, userCountryName]);
 
   const visibleRequests = useMemo(
     () =>
@@ -413,8 +431,38 @@ function App() {
     setIsFormOpen(true);
   }
 
+  async function requestCountryMatchesUser(location: Coordinates) {
+    let nextUserCountryCode = userCountryCode;
+    let nextUserCountryName = userCountryName;
+    let selectedCountryCode = manualCountryCode || mapCenterCountryCode;
+
+    if (!nextUserCountryCode && userLocation) {
+      const userDetails = await reverseGeocodeDetails(userLocation);
+      nextUserCountryCode = userDetails.countryCode ?? "";
+      nextUserCountryName = userDetails.countryName ?? "";
+      if (nextUserCountryCode) setUserCountryCode(nextUserCountryCode);
+      if (nextUserCountryName) setUserCountryName(nextUserCountryName);
+    }
+
+    if (!selectedCountryCode) {
+      const selectedDetails = await reverseGeocodeDetails(location);
+      selectedCountryCode = selectedDetails.countryCode ?? "";
+    }
+
+    if (nextUserCountryCode && selectedCountryCode && nextUserCountryCode !== selectedCountryCode) {
+      showToast(`Por veracidad, solo puedes crear solicitudes dentro de tu país${nextUserCountryName ? ` (${nextUserCountryName})` : ""}.`, "danger");
+      return false;
+    }
+
+    return true;
+  }
+
   async function submitDraft(draft: RequestDraft) {
     setFormError("");
+    if (!(await requestCountryMatchesUser(draft))) {
+      setFormError("La ubicación seleccionada está fuera de tu país. Ajusta el mapa o usa tu GPS.");
+      return;
+    }
     if (await safetyService.isBlocked()) {
       const blockedMessage = "Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.";
       setFormError(blockedMessage);
@@ -589,6 +637,7 @@ function App() {
   function cancelManualLocation() {
     setManualLocation(undefined);
     setManualAddress("");
+    setManualCountryCode("");
     setPickingLocation(false);
     setFormError("");
   }
@@ -605,6 +654,7 @@ function App() {
 
   function confirmManualLocation() {
     if (manualAddress) setDetectedAddress(manualAddress);
+    if (manualCountryCode) setMapCenterCountryCode(manualCountryCode);
     setPickingLocation(false);
     setFormError("");
   }

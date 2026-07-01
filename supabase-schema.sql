@@ -34,7 +34,7 @@ create table if not exists public.support_reports (
   latitude double precision,
   longitude double precision,
   anonymous boolean not null default false,
-  status text not null default 'pending_confirmation' check (status in ('pending_confirmation', 'confirmed', 'rejected', 'partial')),
+  status text not null default 'pending_confirmation' check (status in ('pending_confirmation', 'confirmed', 'rejected', 'partial', 'expired')),
   created_at timestamptz not null default now()
 );
 

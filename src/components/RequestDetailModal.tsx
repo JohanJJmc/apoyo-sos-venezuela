@@ -14,6 +14,14 @@ interface RequestDetailModalProps {
   onCancelRequest: (requestId: string) => void;
 }
 
+function supportStatusLabel(status: SupportReport["status"]) {
+  if (status === "pending_confirmation") return "Esperando confirmación";
+  if (status === "expired") return "Apoyo agotado sin confirmación";
+  if (status === "rejected") return "Apoyo no recibido";
+  if (status === "partial") return "Ayuda parcial recibida";
+  return "Ayuda confirmada";
+}
+
 export function RequestDetailModal({
   request,
   currentUserId,
@@ -72,9 +80,7 @@ export function RequestDetailModal({
                 {!isOwner && latestSupport.supporterPhone && (
                   <p className="mt-1 text-[13px] font-extrabold text-sos-muted">Teléfono visible solo para quien creó la solicitud</p>
                 )}
-                {latestSupport.status === "pending_confirmation" && (
-                  <p className="mt-1 text-[13px] font-extrabold text-sos-primary">Esperando confirmación</p>
-                )}
+                <p className="mt-1 text-[13px] font-extrabold text-sos-primary">{supportStatusLabel(latestSupport.status)}</p>
               </div>
               <span className="text-4xl">→</span>
             </div>

@@ -2,6 +2,10 @@ import type { Coordinates } from "../types/request";
 
 type NominatimResponse = {
   display_name?: string;
+  address?: {
+    country?: string;
+    country_code?: string;
+  };
 };
 
 type GeoapifyResponse = {
@@ -13,6 +17,7 @@ type GeoapifyResponse = {
       city?: string;
       state?: string;
       country?: string;
+      country_code?: string;
     };
   }>;
 };
@@ -22,9 +27,16 @@ type BigDataCloudResponse = {
   city?: string;
   principalSubdivision?: string;
   countryName?: string;
+  countryCode?: string;
   localityInfo?: {
     administrative?: Array<{ name?: string; description?: string }>;
   };
+};
+
+export type ReverseGeocodeDetails = {
+  address: string;
+  countryCode?: string;
+  countryName?: string;
 };
 
 async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T> {
@@ -52,6 +64,16 @@ function formatGeoapifyAddress(result: GeoapifyResponse) {
   );
 }
 
+function geoapifyDetails(result: GeoapifyResponse): ReverseGeocodeDetails {
+  const properties = result.features?.[0]?.properties;
+  if (!properties) return { address: "" };
+  return {
+    address: formatGeoapifyAddress(result),
+    countryCode: properties.country_code?.toLowerCase(),
+    countryName: properties.country,
+  };
+}
+
 function formatBigDataCloudAddress(result: BigDataCloudResponse) {
   const administrativeNames =
     result.localityInfo?.administrative
@@ -72,6 +94,10 @@ function formatBigDataCloudAddress(result: BigDataCloudResponse) {
 }
 
 export async function reverseGeocodeAddress(location: Coordinates) {
+  return (await reverseGeocodeDetails(location)).address;
+}
+
+export async function reverseGeocodeDetails(location: Coordinates): Promise<ReverseGeocodeDetails> {
   const geoapifyKey = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined;
 
   if (geoapifyKey) {
@@ -81,8 +107,8 @@ export async function reverseGeocodeAddress(location: Coordinates) {
 
     try {
       const result = await fetchJson<GeoapifyResponse>(geoapifyUrl);
-      const address = formatGeoapifyAddress(result);
-      if (address) return address;
+      const details = geoapifyDetails(result);
+      if (details.address) return details;
     } catch {
       // Try public providers below.
     }
@@ -94,7 +120,13 @@ export async function reverseGeocodeAddress(location: Coordinates) {
 
   try {
     const result = await fetchJson<NominatimResponse>(nominatimUrl);
-    if (result.display_name) return result.display_name;
+    if (result.display_name) {
+      return {
+        address: result.display_name,
+        countryCode: result.address?.country_code?.toLowerCase(),
+        countryName: result.address?.country,
+      };
+    }
   } catch {
     // Try the next public provider below.
   }
@@ -106,10 +138,16 @@ export async function reverseGeocodeAddress(location: Coordinates) {
   try {
     const result = await fetchJson<BigDataCloudResponse>(bigDataCloudUrl);
     const address = formatBigDataCloudAddress(result);
-    if (address) return address;
+    if (address) {
+      return {
+        address,
+        countryCode: result.countryCode?.toLowerCase(),
+        countryName: result.countryName,
+      };
+    }
   } catch {
     // Fall through to coordinates.
   }
 
-  return "";
+  return { address: "" };
 }

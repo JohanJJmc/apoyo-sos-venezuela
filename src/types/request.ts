@@ -19,7 +19,7 @@ export interface SupportReport {
   latitude?: number;
   longitude?: number;
   anonymous?: boolean;
-  status: "pending_confirmation" | "confirmed" | "rejected" | "partial";
+  status: "pending_confirmation" | "confirmed" | "rejected" | "partial" | "expired";
   createdAt: string;
 }
 

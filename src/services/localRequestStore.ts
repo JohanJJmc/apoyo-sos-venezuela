@@ -4,6 +4,7 @@ import { getCurrentUserId } from "./authSession";
 
 const STORAGE_KEY = "apoyo-sos-requests";
 const RESOLVED_RETENTION_MS = 48 * 60 * 60 * 1000;
+const SUPPORT_CONFIRMATION_TIMEOUT_MS = 6 * 60 * 60 * 1000;
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
 
@@ -95,13 +96,26 @@ function removeExpiredResolved(requests: Request[]) {
   });
 }
 
+function expirePendingSupportReports(requests: Request[]) {
+  const currentTime = Date.now();
+  return requests.map((request) => ({
+    ...request,
+    supportReports: request.supportReports.map((report) =>
+      report.status === "pending_confirmation" &&
+      currentTime - new Date(report.createdAt).getTime() > SUPPORT_CONFIRMATION_TIMEOUT_MS
+        ? { ...report, status: "expired" as const }
+        : report,
+    ),
+  }));
+}
+
 export const localRequestStore = {
   get currentUserId() {
     return getCurrentUserId();
   },
 
   listRequests() {
-    const requests = removeExpiredResolved(read());
+    const requests = removeExpiredResolved(expirePendingSupportReports(read()));
     write(requests);
     return requests;
   },
