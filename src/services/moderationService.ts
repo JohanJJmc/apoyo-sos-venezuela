@@ -12,6 +12,13 @@ export class ModerationBlockedError extends Error {
   }
 }
 
+export class ModerationUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ModerationUnavailableError";
+  }
+}
+
 export async function validateSafeContent(kind: "request" | "support", fields: ModerationFields) {
   const response = await fetch("/api/moderate-request", {
     method: "POST",
@@ -27,6 +34,6 @@ export async function validateSafeContent(kind: "request" | "support", fields: M
       "No se pudo validar la seguridad del contenido. Intenta nuevamente.";
 
     if (response.ok) throw new ModerationBlockedError(message);
-    throw new Error(message);
+    throw new ModerationUnavailableError(message);
   }
 }

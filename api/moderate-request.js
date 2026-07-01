@@ -70,9 +70,29 @@ export default async function handler(request, response) {
 
     const moderation = await moderationResponse.json();
     if (!moderationResponse.ok) {
+      const code = moderation?.error?.code || moderation?.error?.type || "";
+      const message = moderation?.error?.message || "";
+      const lowerMessage = `${code} ${message}`.toLowerCase();
+
+      if (lowerMessage.includes("insufficient_quota") || lowerMessage.includes("quota") || lowerMessage.includes("billing")) {
+        response.status(402).json({
+          allowed: false,
+          message: "La moderación automática no tiene créditos activos en OpenAI. Agrega créditos o revisa el billing de OpenAI.",
+        });
+        return;
+      }
+
+      if (lowerMessage.includes("invalid_api_key") || lowerMessage.includes("incorrect api key") || lowerMessage.includes("unauthorized")) {
+        response.status(401).json({
+          allowed: false,
+          message: "La clave de OpenAI no es válida. Revisa OPENAI_API_KEY en Vercel.",
+        });
+        return;
+      }
+
       response.status(502).json({
         allowed: false,
-        message: "No se pudo validar la seguridad del contenido. Intenta nuevamente.",
+        message: "OpenAI no pudo validar el contenido en este momento. Revisa la API key, créditos o intenta más tarde.",
       });
       return;
     }
