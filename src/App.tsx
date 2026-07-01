@@ -141,6 +141,11 @@ function App() {
   }, [flushQueuedRequests, session]);
 
   useEffect(() => {
+    setIsFilterOpen(false);
+    setIsMapFilterOpen(false);
+  }, [activeView]);
+
+  useEffect(() => {
     if (!session) return;
 
     const interval = window.setInterval(() => {
@@ -197,7 +202,9 @@ function App() {
   }, [reloadRequests, session]);
 
   useEffect(() => {
+    let isMounted = true;
     void authService.getSupabaseSession().then((nextSession) => {
+      if (!isMounted) return;
       if (nextSession) {
         setSession(nextSession);
         return;
@@ -208,7 +215,10 @@ function App() {
         setSession(null);
       }
     });
-  }, [session]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -741,7 +751,7 @@ function App() {
                 aria-label="Abrir filtros"
                 aria-expanded={isMapFilterOpen}
               >
-                ⌘
+                ≡
               </button>
               <button
                 type="button"
@@ -799,7 +809,7 @@ function App() {
                 aria-label="Filtros"
                 aria-expanded={isFilterOpen}
               >
-                ⌘
+                ≡
               </button>
             </div>
 
