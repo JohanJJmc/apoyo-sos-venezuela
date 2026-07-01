@@ -151,4 +151,21 @@ export const authService = {
     if (supabase) await supabase.auth.signOut();
     clearSession();
   },
+
+  async deleteCurrentUserAccount() {
+    if (!supabase) {
+      clearSession();
+      return;
+    }
+
+    const { error } = await supabase.rpc("delete_current_user_account");
+    if (error) {
+      if (error.message.toLowerCase().includes("function")) {
+        throw new Error("Falta activar la función de borrado de cuenta en Supabase.");
+      }
+      throw error;
+    }
+
+    clearSession();
+  },
 };

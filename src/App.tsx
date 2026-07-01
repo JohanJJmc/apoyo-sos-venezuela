@@ -316,18 +316,24 @@ function App() {
   }
 
   async function handleDeleteAccountData() {
+    if (!session) return;
+
     const confirmed = window.confirm(
-      "Esto borrará tus solicitudes y apoyos asociados a esta cuenta. ¿Quieres continuar?",
+      "Esto eliminará tu cuenta y borrará tus solicitudes y apoyos asociados. Esta acción no se puede deshacer. ¿Quieres continuar?",
     );
     if (!confirmed) return;
 
     try {
-      await requestService.deleteCurrentUserData();
-      await authService.signOut();
+      if (session.isAnonymous) {
+        await requestService.deleteCurrentUserData();
+        await authService.signOut();
+      } else {
+        await authService.deleteCurrentUserAccount();
+      }
       setSession(null);
       setRequests([]);
     } catch (nextError) {
-      window.alert(nextError instanceof Error ? nextError.message : "No se pudieron borrar los datos.");
+      window.alert(nextError instanceof Error ? nextError.message : "No se pudo eliminar la cuenta.");
     }
   }
 
