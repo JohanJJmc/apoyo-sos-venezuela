@@ -3,6 +3,7 @@ import { supabase } from "./supabaseClient";
 
 const PHOTO_BUCKET = "nexo-photos";
 const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024;
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function extensionFor(file: File) {
@@ -36,6 +37,27 @@ export async function uploadPhoto(file?: File, folder = "requests") {
   });
   if (error) throw error;
 
-  const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(filePath);
-  return data.publicUrl;
+  return filePath;
+}
+
+export async function signedPhotoUrl(path?: string) {
+  if (!path || !supabase) return path;
+  if (path.startsWith("blob:") || path.startsWith("data:")) return path;
+
+  try {
+    const url = new URL(path);
+    const marker = `/storage/v1/object/public/${PHOTO_BUCKET}/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex >= 0) {
+      path = decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+    } else {
+      return path;
+    }
+  } catch {
+    // It is already a bucket path.
+  }
+
+  const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (error) return undefined;
+  return data.signedUrl;
 }

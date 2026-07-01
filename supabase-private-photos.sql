@@ -1,16 +1,12 @@
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'nexo-photos',
-  'nexo-photos',
-  false,
-  5242880,
-  array['image/jpeg', 'image/png', 'image/webp']
-)
-on conflict (id) do update
+-- Run this after deploying the app version that uses signed URLs.
+-- It makes nexo-photos private and prevents public listing/access.
+
+update storage.buckets
 set
   public = false,
   file_size_limit = 5242880,
-  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']
+where id = 'nexo-photos';
 
 drop policy if exists "nexo photos public read" on storage.objects;
 drop policy if exists "nexo photos authenticated read" on storage.objects;

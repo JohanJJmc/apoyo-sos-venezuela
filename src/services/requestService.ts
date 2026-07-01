@@ -2,6 +2,7 @@ import type { Coordinates, Request, SupportReport } from "../types/request";
 import { distanceInMeters } from "../utils/distance";
 import { getCurrentUserId } from "./authSession";
 import { localRequestStore } from "./localRequestStore";
+import { signedPhotoUrl } from "./photoStorageService";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 export const SIMILAR_REQUEST_RADIUS_METERS = 200;
@@ -76,6 +77,23 @@ function mapRequest(row: RequestRow, supportReports: SupportReportRow[] = []): R
   };
 }
 
+async function mapRequestWithSignedPhotos(row: RequestRow, supportReports: SupportReportRow[] = []): Promise<Request> {
+  const request = mapRequest(row, supportReports);
+  const [requestPhotoUrl, supportPhotoUrls] = await Promise.all([
+    signedPhotoUrl(request.photoUrl),
+    Promise.all(request.supportReports.map((report) => signedPhotoUrl(report.photoUrl))),
+  ]);
+
+  return {
+    ...request,
+    photoUrl: requestPhotoUrl,
+    supportReports: request.supportReports.map((report, index) => ({
+      ...report,
+      photoUrl: supportPhotoUrls[index],
+    })),
+  };
+}
+
 function mapSupportReport(row: SupportReportRow): SupportReport {
   return {
     id: row.id,
@@ -125,12 +143,12 @@ async function listSupabaseRequests() {
   if (requestError) throw requestError;
   if (supportError) throw supportError;
 
-  return (requests as RequestRow[]).map((request) =>
-    mapRequest(
+  return Promise.all((requests as RequestRow[]).map((request) =>
+    mapRequestWithSignedPhotos(
       request,
       (supportReports as SupportReportRow[]).filter((report) => report.request_id === request.id),
     ),
-  );
+  ));
 }
 
 export const requestService = {
@@ -151,7 +169,7 @@ export const requestService = {
 
     const { data, error } = await supabase.from("requests").insert(requestToInsert(input)).select("*").single();
     throwSupabaseError(error);
-    return mapRequest(data as RequestRow);
+    return mapRequestWithSignedPhotos(data as RequestRow);
   },
 
   async findSimilarPending(category: string, location: Coordinates, radiusMeters = SIMILAR_REQUEST_RADIUS_METERS) {
@@ -192,7 +210,8 @@ export const requestService = {
       .single();
 
     if (error) throw error;
-    return mapSupportReport(data as SupportReportRow);
+    const report = mapSupportReport(data as SupportReportRow);
+    return { ...report, photoUrl: await signedPhotoUrl(report.photoUrl) };
   },
 
   async confirmSupport(requestId: string, status: SupportReport["status"]) {
