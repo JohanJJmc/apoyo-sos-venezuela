@@ -149,6 +149,21 @@ function App() {
   useEffect(() => {
     setIsFilterOpen(false);
     setIsMapFilterOpen(false);
+    setFilters((currentFilters) => {
+      const nextStatus =
+        activeView === "mine"
+          ? { showPending: true, showResolved: true }
+          : { showPending: true, showResolved: false };
+
+      if (
+        currentFilters.showPending === nextStatus.showPending &&
+        currentFilters.showResolved === nextStatus.showResolved
+      ) {
+        return currentFilters;
+      }
+
+      return { ...currentFilters, ...nextStatus };
+    });
   }, [activeView]);
 
   useEffect(() => {
