@@ -9,7 +9,16 @@ interface LoginScreenProps {
 type AuthView = "login" | "signup" | "verify";
 
 function authErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("rate limit")) {
+      return "Se enviaron muchos correos en poco tiempo. Espera unos minutos y vuelve a intentar.";
+    }
+    if (message.includes("already registered") || message.includes("already been registered")) {
+      return "Este correo ya tiene una cuenta. Intenta iniciar sesión.";
+    }
+    return error.message;
+  }
   return "No se pudo completar la acción. Intenta de nuevo.";
 }
 
