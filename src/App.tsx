@@ -516,6 +516,19 @@ function App() {
     await reloadRequests();
   }
 
+  async function cancelRequest(requestId: string) {
+    const confirmed = window.confirm("¿Seguro que quieres cancelar este pedido? La solicitud desaparecerá del mapa y de las listas.");
+    if (!confirmed) return;
+
+    try {
+      await requestService.cancelRequest(requestId);
+      setSelectedRequest(null);
+      await reloadRequests();
+    } catch (nextError) {
+      showToast(getErrorMessage(nextError, "No se pudo cancelar el pedido."));
+    }
+  }
+
   function startManualLocation() {
     setActiveView("map");
     const startingLocation = manualLocation ?? userLocation;
@@ -818,6 +831,7 @@ function App() {
         onClose={() => setSelectedRequest(null)}
         onOfferSupport={offerSupport}
         onConfirmSupport={confirmSupport}
+        onCancelRequest={cancelRequest}
       />
 
       <SupportOfferForm

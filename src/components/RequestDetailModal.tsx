@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Request, SupportReport } from "../types/request";
 import { timeAgo } from "../utils/time";
 import { CategoryIcon } from "./CategoryIcon";
@@ -10,6 +11,7 @@ interface RequestDetailModalProps {
   onClose: () => void;
   onOfferSupport: (requestId: string) => void;
   onConfirmSupport: (requestId: string, status: SupportReport["status"]) => void;
+  onCancelRequest: (requestId: string) => void;
 }
 
 export function RequestDetailModal({
@@ -18,7 +20,9 @@ export function RequestDetailModal({
   onClose,
   onOfferSupport,
   onConfirmSupport,
+  onCancelRequest,
 }: RequestDetailModalProps) {
+  const [selectedSupport, setSelectedSupport] = useState<SupportReport | null>(null);
   if (!request) return null;
 
   const isOwner = request.createdBy === currentUserId;
@@ -56,7 +60,7 @@ export function RequestDetailModal({
         <div className="flex-1" />
 
         {latestSupport && (
-          <div className="mb-7 rounded-input bg-sos-resolvedSoft p-4">
+          <button type="button" onClick={() => setSelectedSupport(latestSupport)} className="mb-7 w-full rounded-input bg-sos-resolvedSoft p-4 text-left">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[15px] font-extrabold text-sos-ink">
@@ -74,11 +78,11 @@ export function RequestDetailModal({
               </div>
               <span className="text-4xl">→</span>
             </div>
-          </div>
+          </button>
         )}
 
         <div className="space-y-3">
-          {pendingSupport && isOwner ? (
+          {isOwner ? (
             <>
                 <button
                   type="button"
@@ -96,10 +100,10 @@ export function RequestDetailModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onConfirmSupport(request.id, "rejected")}
+                  onClick={() => onCancelRequest(request.id)}
                   className="min-h-12 w-full rounded-pill bg-sos-background px-4 text-[15px] font-extrabold text-sos-muted"
                 >
-                  No recibi ayuda
+                  Cancelar pedido
                 </button>
             </>
           ) : pendingSupport ? (
@@ -116,16 +120,40 @@ export function RequestDetailModal({
               Ofrecer apoyo
             </button>
           )}
-            {isOwner && (
-              <button
-                type="button"
-                onClick={() => onConfirmSupport(request.id, "confirmed")}
-                className="min-h-14 w-full rounded-pill bg-[#59C431] px-5 text-[16px] font-extrabold text-white"
-              >
-                ✓ Marcar como Atendida
-              </button>
-            )}
         </div>
+
+        {selectedSupport && (
+          <div className="fixed inset-0 z-[1200] bg-white px-7 pb-7 pt-20">
+            <BackButton onClick={() => setSelectedSupport(null)} label="Detalle apoyo" />
+            <section className="mt-8 space-y-5">
+              <div className="rounded-input bg-sos-resolvedSoft p-4">
+                <p className="text-[15px] font-extrabold text-sos-muted">¿Quién apoya?</p>
+                <p className="mt-2 text-[18px] font-extrabold text-sos-ink">
+                  {selectedSupport.anonymous ? "Apoyo anónimo" : selectedSupport.supporterName || "Persona solidaria"}
+                </p>
+                {(isOwner || selectedSupport.supporterId === currentUserId) && selectedSupport.supporterPhone && (
+                  <p className="mt-1 text-[16px] font-extrabold text-sos-ink">{selectedSupport.supporterPhone}</p>
+                )}
+              </div>
+
+              {selectedSupport.details && (
+                <div>
+                  <p className="text-[14px] font-extrabold text-sos-muted">Descripción</p>
+                  <p className="mt-2 rounded-input border border-sos-border bg-sos-background p-4 text-[16px] font-semibold text-sos-ink">
+                    {selectedSupport.details}
+                  </p>
+                </div>
+              )}
+
+              {selectedSupport.photoUrl && (
+                <div>
+                  <p className="mb-2 text-[14px] font-extrabold text-sos-muted">Foto</p>
+                  <img src={selectedSupport.photoUrl} alt="Foto del apoyo" className="max-h-80 w-full rounded-card object-cover" />
+                </div>
+              )}
+            </section>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -191,6 +191,11 @@ export const localRequestStore = {
     );
   },
 
+  cancelRequest(requestId: string) {
+    const userId = getCurrentUserId();
+    write(read().filter((request) => request.id !== requestId || request.createdBy !== userId));
+  },
+
   deleteCurrentUserData() {
     const userId = getCurrentUserId();
     write(

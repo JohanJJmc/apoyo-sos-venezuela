@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Coordinates, SupportReport } from "../types/request";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
@@ -20,12 +20,6 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
   const [details, setDetails] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [photoError, setPhotoError] = useState("");
-  const [address, setAddress] = useState("");
-
-  const locationText = useMemo(
-    () => (currentLocation ? "Ubicación detectada ✓" : "Ubicación detectada ✓"),
-    [currentLocation],
-  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -35,7 +29,6 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
     setDetails("");
     setPhotoUrl(undefined);
     setPhotoError("");
-    setAddress("");
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -108,12 +101,6 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
           />
 
           <PhotoUploader photoUrl={photoUrl} error={photoError} onChange={handlePhoto} />
-
-          <section>
-            <p className="mb-2 text-[14px] font-extrabold text-sos-muted">Ubicación</p>
-            <TextInput label="" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Dirección o punto de referencia" />
-            <p className="mt-2 text-[15px] font-extrabold text-[#00A651]">{locationText}</p>
-          </section>
 
           <button
             type="button"

@@ -232,6 +232,17 @@ export const requestService = {
     if (reportError) throw reportError;
   },
 
+  async cancelRequest(requestId: string) {
+    if (!supabase) return localRequestStore.cancelRequest(requestId);
+
+    const userId = getCurrentUserId();
+    const { error: supportError } = await supabase.from("support_reports").delete().eq("request_id", requestId);
+    if (supportError) throw supportError;
+
+    const { error: requestError } = await supabase.from("requests").delete().eq("id", requestId).eq("created_by", userId);
+    if (requestError) throw requestError;
+  },
+
   async deleteCurrentUserData() {
     if (!supabase) return localRequestStore.deleteCurrentUserData();
 
