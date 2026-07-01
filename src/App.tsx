@@ -751,7 +751,9 @@ function App() {
                 aria-label="Abrir filtros"
                 aria-expanded={isMapFilterOpen}
               >
-                ≡
+                <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
               </button>
               <button
                 type="button"
@@ -809,7 +811,9 @@ function App() {
                 aria-label="Filtros"
                 aria-expanded={isFilterOpen}
               >
-                ≡
+                <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
 
