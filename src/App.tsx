@@ -15,6 +15,7 @@ import { SupportOfferForm } from "./components/SupportOfferForm";
 import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
 import { authService } from "./services/authService";
 import { reverseGeocodeAddress } from "./services/geocodeService";
+import { validateSafeContent } from "./services/moderationService";
 import { requestQueue } from "./services/requestQueue";
 import { requestService } from "./services/requestService";
 import { supabase } from "./services/supabaseClient";
@@ -311,6 +312,19 @@ function App() {
 
   async function submitDraft(draft: RequestDraft) {
     setFormError("");
+    try {
+      await validateSafeContent("request", {
+        category: draft.category,
+        item: draft.item,
+        description: draft.description,
+        address: draft.address,
+        requesterName: draft.requesterName,
+      });
+    } catch (nextError) {
+      setFormError(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+      return;
+    }
+
     const similar = await requestService.findSimilarPending(draft.category, draft);
     if (similar) {
       setPendingDraft(draft);
@@ -380,9 +394,17 @@ function App() {
 
   async function submitSupportOffer(input: Partial<SupportReport>) {
     if (!supportRequestId) return;
-    await requestService.offerSupport(supportRequestId, input);
-    setSupportRequestId(null);
-    await reloadRequests();
+    try {
+      await validateSafeContent("support", {
+        supporterName: input.supporterName,
+        details: input.details,
+      });
+      await requestService.offerSupport(supportRequestId, input);
+      setSupportRequestId(null);
+      await reloadRequests();
+    } catch (nextError) {
+      window.alert(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+    }
   }
 
   async function confirmSupport(requestId: string, status: SupportReport["status"]) {
