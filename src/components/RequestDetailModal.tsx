@@ -82,7 +82,7 @@ export function RequestDetailModal({
         )}
 
         <div className="space-y-3">
-          {isOwner ? (
+          {isOwner && request.status !== "resolved" ? (
             <>
                 <button
                   type="button"
@@ -106,6 +106,10 @@ export function RequestDetailModal({
                   Cancelar pedido
                 </button>
             </>
+          ) : isOwner && request.status === "resolved" ? (
+            <p className="rounded-input bg-sos-resolvedSoft px-4 py-3 text-center text-[15px] font-extrabold text-sos-resolved">
+              Esta solicitud ya fue atendida.
+            </p>
           ) : pendingSupport ? (
             <p className="rounded-input bg-sos-primarySoft px-4 py-3 text-center text-[15px] font-extrabold text-sos-primary">
               Apoyo ofrecido. Falta que la persona confirme si recibió la ayuda.
