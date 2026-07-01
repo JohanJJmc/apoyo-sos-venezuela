@@ -24,6 +24,14 @@ function getErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
     return error.message;
   }
+  if (error && typeof error === "object") {
+    try {
+      const serialized = JSON.stringify(error);
+      if (serialized && serialized !== "{}") return serialized;
+    } catch {
+      return fallback;
+    }
+  }
   return fallback;
 }
 
@@ -219,7 +227,7 @@ function App() {
       await requestService.createRequest(draft);
       await finishCreateFlow();
     } catch (nextError) {
-      setFormError(getErrorMessage(nextError, "No se pudo publicar la solicitud. Intenta de nuevo."));
+      setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
     }
   }
 
@@ -234,8 +242,12 @@ function App() {
 
   async function createDraftAnyway() {
     if (!pendingDraft) return;
-    await requestService.createRequest(pendingDraft);
-    await finishCreateFlow();
+    try {
+      await requestService.createRequest(pendingDraft);
+      await finishCreateFlow();
+    } catch (nextError) {
+      setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+    }
   }
 
   async function joinSimilar() {
