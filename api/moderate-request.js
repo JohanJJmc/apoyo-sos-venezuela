@@ -1,4 +1,5 @@
 const OPENAI_MODERATION_URL = "https://api.openai.com/v1/moderations";
+const OPENAI_MODERATION_ENABLED = process.env.OPENAI_MODERATION_ENABLED === "true";
 
 const validationTree = [
   {
@@ -135,11 +136,11 @@ export default async function handler(request, response) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!OPENAI_MODERATION_ENABLED || !apiKey) {
     response.status(200).json({
       allowed: true,
       source: "local_rules_only",
-      warning: "OpenAI no está configurado. Se aplicaron reglas locales.",
+      warning: "OpenAI Moderation está desactivado. Se aplicaron reglas locales.",
     });
     return;
   }
