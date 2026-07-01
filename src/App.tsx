@@ -45,6 +45,7 @@ function App() {
   const [userLocation, setUserLocation] = useState<Coordinates>();
   const [manualLocation, setManualLocation] = useState<Coordinates>();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [authRequiredForRequest, setAuthRequiredForRequest] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [similarRequest, setSimilarRequest] = useState<Request | null>(null);
   const [pendingDraft, setPendingDraft] = useState<RequestDraft | null>(null);
@@ -299,6 +300,10 @@ function App() {
     setFormError("");
     setSimilarRequest(null);
     setPendingDraft(null);
+    if (session?.isAnonymous) {
+      setAuthRequiredForRequest(true);
+      return;
+    }
     if (mapCenterAddress) setDetectedAddress(mapCenterAddress);
     setIsFormOpen(true);
   }
@@ -421,6 +426,7 @@ function App() {
   function handleLogin(nextSession: AppSession) {
     saveSession(nextSession);
     setSession(nextSession);
+    setAuthRequiredForRequest(false);
     void reloadRequests();
   }
 
@@ -470,6 +476,17 @@ function App() {
 
   if (!session) {
     return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  if (authRequiredForRequest) {
+    return (
+      <LoginScreen
+        onLogin={handleLogin}
+        initialView="signup"
+        securityNotice
+        onCancel={() => setAuthRequiredForRequest(false)}
+      />
+    );
   }
 
   return (

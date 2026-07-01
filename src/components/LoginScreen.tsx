@@ -4,6 +4,9 @@ import { authService } from "../services/authService";
 
 interface LoginScreenProps {
   onLogin: (session: AppSession) => void;
+  initialView?: AuthView;
+  securityNotice?: boolean;
+  onCancel?: () => void;
 }
 
 type AuthView = "login" | "signup" | "verify";
@@ -54,6 +57,14 @@ function PasswordToggleIcon({ visible }: { visible: boolean }) {
   );
 }
 
+function SecurityNotice() {
+  return (
+    <div className="rounded-input bg-sos-primarySoft p-4 text-[13px] font-extrabold leading-snug text-sos-primary">
+      Por seguridad y para evitar usos indebidos o ilícitos, NEXO requiere registro y validación de usuario para publicar solicitudes de ayuda. Está prohibido usar la app para tráfico de personas, drogas, armas, extorsión, amenazas o cualquier actividad ilegal.
+    </div>
+  );
+}
+
 function PasswordField({
   value,
   onChange,
@@ -90,8 +101,8 @@ function PasswordField({
   );
 }
 
-export function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [view, setView] = useState<AuthView>("login");
+export function LoginScreen({ onLogin, initialView = "login", securityNotice = false, onCancel }: LoginScreenProps) {
+  const [view, setView] = useState<AuthView>(initialView);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -168,13 +179,16 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   if (view === "signup") {
     return (
       <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
-        <button type="button" onClick={() => goTo("login")} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
+        <button type="button" onClick={() => (onCancel ? onCancel() : goTo("login"))} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
           ‹
         </button>
         <h1 className="mt-3 text-[20px] font-extrabold">Crear cuenta</h1>
-        <p className="mt-16 text-[14px] font-semibold text-sos-ink">
+        <p className="mt-10 text-[14px] font-semibold text-sos-ink">
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
         </p>
+        <div className="mt-5">
+          <SecurityNotice />
+        </div>
 
         <div className="mt-8 space-y-3">
           <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
@@ -234,6 +248,11 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-20 text-sos-ink">
       <img src="/assets/nexo-logo.svg" alt="NEXO" className="mx-auto h-16 w-16 rounded-[12px]" />
       <p className="mt-8 text-center text-[14px] font-extrabold">Conecta. Ayuda. Responde.</p>
+      {securityNotice && (
+        <div className="mt-8">
+          <SecurityNotice />
+        </div>
+      )}
 
       <div className="mt-8 space-y-3">
         <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
