@@ -86,6 +86,7 @@ function App() {
   const [manualAddress, setManualAddress] = useState("");
   const [manualCountryCode, setManualCountryCode] = useState("");
   const [isDetectingManualAddress, setIsDetectingManualAddress] = useState(false);
+  const [mapCenterLocation, setMapCenterLocation] = useState<Coordinates>();
   const [mapCenterAddress, setMapCenterAddress] = useState("");
   const [mapCenterCountryCode, setMapCenterCountryCode] = useState("");
   const [mapCenterCountryName, setMapCenterCountryName] = useState("");
@@ -395,6 +396,8 @@ function App() {
     () => (selectedRequest ? requests.find((request) => request.id === selectedRequest.id) ?? selectedRequest : null),
     [requests, selectedRequest],
   );
+  const requestFormSelectedLocation = manualLocation ?? (activeView === "map" ? mapCenterLocation : undefined);
+  const requestFormInitialAddress = manualAddress || (activeView === "map" ? mapCenterAddress : "") || detectedAddress;
   const contentTopClass = isOffline ? "top-48" : "top-44";
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
   const currentUserPhone = session?.phone || "";
@@ -440,14 +443,29 @@ function App() {
       setAuthRequiredForRequest(true);
       return;
     }
-    if (mapCenterAddress) setDetectedAddress(mapCenterAddress);
+    if (activeView === "map" && mapCenterLocation) {
+      setManualLocation(mapCenterLocation);
+      setManualAddress(mapCenterAddress);
+      setManualCountryCode(mapCenterCountryCode);
+    }
+    if (activeView === "map" && mapCenterAddress) setDetectedAddress(mapCenterAddress);
     setIsFormOpen(true);
   }
 
   async function requestCountryMatchesUser(location: Coordinates) {
     let nextUserCountryCode = userCountryCode;
     let nextUserCountryName = userCountryName;
-    let selectedCountryCode = manualCountryCode || mapCenterCountryCode;
+    const locationMatchesManual =
+      manualLocation &&
+      Math.abs(location.latitude - manualLocation.latitude) < 0.00001 &&
+      Math.abs(location.longitude - manualLocation.longitude) < 0.00001;
+    const locationMatchesMapCenter =
+      mapCenterLocation &&
+      Math.abs(location.latitude - mapCenterLocation.latitude) < 0.00001 &&
+      Math.abs(location.longitude - mapCenterLocation.longitude) < 0.00001;
+    let selectedCountryCode =
+      (locationMatchesManual ? manualCountryCode : "") ||
+      (locationMatchesMapCenter ? mapCenterCountryCode : "");
 
     if (!nextUserCountryCode && userLocation) {
       const userDetails = await reverseGeocodeDetails(userLocation);
@@ -638,10 +656,11 @@ function App() {
 
   function startManualLocation() {
     setActiveView("map");
-    const startingLocation = manualLocation ?? userLocation;
+    const startingLocation = manualLocation ?? mapCenterLocation ?? userLocation;
     if (startingLocation) {
       setManualLocation(startingLocation);
-      setManualAddress(detectedAddress);
+      setManualAddress(mapCenterAddress || detectedAddress);
+      setManualCountryCode(mapCenterCountryCode);
     }
     setPickingLocation(true);
     setFormError("");
@@ -661,6 +680,7 @@ function App() {
   }, [reverseGeocodeManual]);
 
   const handleMapCenterChange = useCallback((location: Coordinates) => {
+    setMapCenterLocation(location);
     if (mapGeocodeTimer.current) window.clearTimeout(mapGeocodeTimer.current);
     mapGeocodeTimer.current = window.setTimeout(() => {
       void reverseGeocodeMapCenter(location);
@@ -840,7 +860,7 @@ function App() {
           )}
           {!pickingLocation && (
             <HomeActionPanel
-              locationReady={Boolean(userLocation || manualLocation)}
+              locationReady={Boolean(mapCenterLocation || userLocation || manualLocation)}
               address={mapCenterAddress}
               isDetectingAddress={isDetectingMapCenterAddress}
               disabled={mapIsOutsideUserCountry}
@@ -904,12 +924,15 @@ function App() {
       <RequestFormBottomSheet
         isOpen={isFormOpen}
         currentLocation={userLocation}
-        selectedLocation={manualLocation}
-        initialAddress={manualAddress || mapCenterAddress || detectedAddress}
+        selectedLocation={requestFormSelectedLocation}
+        initialAddress={requestFormInitialAddress}
         similarRequest={similarRequest}
         onClose={() => {
           setIsFormOpen(false);
           setPickingLocation(false);
+          setManualLocation(undefined);
+          setManualAddress("");
+          setManualCountryCode("");
         }}
         onSubmit={submitDraft}
         onUseManualLocation={startManualLocation}
