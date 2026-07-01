@@ -660,7 +660,7 @@ function App() {
     );
   }
 
-  if (!session.isAnonymous && !session.phone) {
+  if (!session.isAnonymous && (!session.phone || !session.name)) {
     return (
       <RequiredPhoneScreen
         session={session}
