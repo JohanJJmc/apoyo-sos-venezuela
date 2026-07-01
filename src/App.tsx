@@ -332,6 +332,9 @@ function App() {
       }
       setSession(null);
       setRequests([]);
+      setSelectedRequest(null);
+      setIsFormOpen(false);
+      setSupportRequestId(null);
     } catch (nextError) {
       window.alert(nextError instanceof Error ? nextError.message : "No se pudo eliminar la cuenta.");
     }

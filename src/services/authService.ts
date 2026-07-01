@@ -166,6 +166,7 @@ export const authService = {
       throw error;
     }
 
+    await supabase.auth.signOut({ scope: "local" });
     clearSession();
   },
 };
