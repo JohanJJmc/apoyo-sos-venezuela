@@ -60,7 +60,7 @@ function PasswordToggleIcon({ visible }: { visible: boolean }) {
 function SecurityNotice() {
   return (
     <div className="rounded-input bg-sos-primarySoft p-4 text-[13px] font-extrabold leading-snug text-sos-primary">
-      Por seguridad y para evitar usos indebidos o ilícitos, NEXO requiere registro y validación de usuario para publicar solicitudes de ayuda. Está prohibido usar la app para tráfico de personas, drogas, armas, extorsión, amenazas o cualquier actividad ilegal.
+      Por seguridad y para evitar usos indebidos o ilícitos, NEXO requiere registro y validación de usuario para publicar solicitudes de ayuda.
     </div>
   );
 }
@@ -108,6 +108,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [acceptedSafetyTerms, setAcceptedSafetyTerms] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -121,7 +122,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   const cleanEmail = email.trim().toLowerCase();
   const canLogin = cleanEmail.length > 4 && password.length >= 6;
-  const canSignUp = canLogin && password === passwordConfirm;
+  const canSignUp = canLogin && password === passwordConfirm && acceptedSafetyTerms;
 
   async function submitLogin() {
     if (!canLogin) return;
@@ -138,7 +139,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   async function submitSignUp() {
     if (!canSignUp) {
-      setError("Confirma que el correo sea válido y que las contraseñas coincidan.");
+      setError("Confirma que el correo sea válido, que las contraseñas coincidan y acepta el aviso de seguridad.");
       return;
     }
     setIsLoading(true);
@@ -186,14 +187,26 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         <p className="mt-10 text-[14px] font-semibold text-sos-ink">
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
         </p>
-        <div className="mt-5">
-          <SecurityNotice />
-        </div>
 
         <div className="mt-8 space-y-3">
           <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <PasswordField value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />
           <PasswordField value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} />
+        </div>
+
+        <div className="mt-5">
+          <SecurityNotice />
+          <label className="mt-3 flex items-start gap-3 rounded-input border border-sos-border bg-white p-4 text-[13px] font-extrabold leading-snug text-sos-ink">
+            <input
+              type="checkbox"
+              checked={acceptedSafetyTerms}
+              onChange={(event) => setAcceptedSafetyTerms(event.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span>
+              Acepto usar NEXO solo para ayuda legítima. Entiendo que cualquier uso indebido o sospechoso podrá ser bloqueado, registrado, investigado y reportado a las autoridades competentes.
+            </span>
+          </label>
         </div>
 
         {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
