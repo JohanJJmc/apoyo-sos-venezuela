@@ -28,7 +28,7 @@ interface RequestFormModalProps {
   initialAddress?: string;
   similarRequest?: Request | null;
   onClose: () => void;
-  onSubmit: (draft: RequestDraft) => void;
+  onSubmit: (draft: RequestDraft) => Promise<void> | void;
   onUseManualLocation: () => void;
   onCancelManualLocation: () => void;
   pickingLocation: boolean;
@@ -58,6 +58,7 @@ export function RequestFormModal({
   const [requesterPhone, setRequesterPhone] = useState("");
   const [requesterAnonymous, setRequesterAnonymous] = useState(false);
   const [address, setAddress] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const wasOpen = useRef(false);
 
   const hasPreciseLocation = Boolean(selectedLocation ?? currentLocation);
@@ -87,6 +88,7 @@ export function RequestFormModal({
     setRequesterPhone("");
     setRequesterAnonymous(false);
     setAddress(initialAddress ?? "");
+    setIsSubmitting(false);
   }, [initialAddress, isOpen]);
 
   useEffect(() => {
@@ -123,21 +125,26 @@ export function RequestFormModal({
     reader.readAsDataURL(file);
   }
 
-  function submit() {
-    if (!canSubmit) return;
-    onSubmit({
-      category,
-      item,
-      quantity: quantityNumber,
-      description: description.trim() || undefined,
-      photoUrl,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      requesterName: requesterAnonymous ? undefined : requesterName.trim() || undefined,
-      requesterPhone: requesterAnonymous ? undefined : requesterPhone.trim() || undefined,
-      requesterAnonymous,
-      address,
-    });
+  async function submit() {
+    if (!canSubmit || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        category,
+        item,
+        quantity: quantityNumber,
+        description: description.trim() || undefined,
+        photoUrl,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        requesterName: requesterAnonymous ? undefined : requesterName.trim() || undefined,
+        requesterPhone: requesterAnonymous ? undefined : requesterPhone.trim() || undefined,
+        requesterAnonymous,
+        address,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -241,10 +248,10 @@ export function RequestFormModal({
           <button
             type="button"
             onClick={submit}
-            disabled={!canSubmit}
+            disabled={!canSubmit || isSubmitting}
             className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
           >
-            Enviar Solicitud
+            {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
           </button>
         </div>
       </section>

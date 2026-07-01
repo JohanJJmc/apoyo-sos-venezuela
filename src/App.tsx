@@ -15,6 +15,7 @@ import { SupportOfferForm } from "./components/SupportOfferForm";
 import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
 import { authService } from "./services/authService";
 import { reverseGeocodeAddress } from "./services/geocodeService";
+import { requestQueue } from "./services/requestQueue";
 import { requestService } from "./services/requestService";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
@@ -59,6 +60,7 @@ function App() {
   const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
   const [recenterSignal, setRecenterSignal] = useState(0);
   const [formError, setFormError] = useState("");
+  const [syncMessage, setSyncMessage] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
@@ -75,6 +77,56 @@ function App() {
     void reloadRequests();
   }, [reloadRequests]);
 
+  const flushQueuedRequests = useCallback(async () => {
+    if (!navigator.onLine || requestQueue.count() === 0) return;
+
+    const queuedRequests = requestQueue.list();
+    let syncedCount = 0;
+
+    for (const queued of queuedRequests) {
+      try {
+        requestQueue.markAttempt(queued.id);
+        await requestService.createRequest(queued.input);
+        requestQueue.remove(queued.id);
+        syncedCount += 1;
+      } catch {
+        break;
+      }
+    }
+
+    if (syncedCount > 0) {
+      setSyncMessage(`${syncedCount} solicitud${syncedCount === 1 ? "" : "es"} pendiente${syncedCount === 1 ? "" : "s"} enviada${syncedCount === 1 ? "" : "s"}.`);
+      window.setTimeout(() => setSyncMessage(""), 5000);
+      await reloadRequests();
+    }
+  }, [reloadRequests]);
+
+  useEffect(() => {
+    void flushQueuedRequests();
+  }, [flushQueuedRequests, session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const interval = window.setInterval(() => {
+      void reloadRequests();
+      void flushQueuedRequests();
+    }, 20000);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void reloadRequests();
+        void flushQueuedRequests();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [flushQueuedRequests, reloadRequests, session]);
+
   useEffect(() => {
     if (session) return;
     void authService.getSupabaseSession().then((nextSession) => {
@@ -85,6 +137,7 @@ function App() {
   useEffect(() => {
     function updateOnlineStatus() {
       setIsOffline(!navigator.onLine);
+      if (navigator.onLine) void flushQueuedRequests();
     }
 
     window.addEventListener("online", updateOnlineStatus);
@@ -227,17 +280,29 @@ function App() {
       await requestService.createRequest(draft);
       await finishCreateFlow();
     } catch (nextError) {
-      setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+      if (navigator.onLine) {
+        setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+        return;
+      }
+
+      requestQueue.enqueue(draft);
+      setSyncMessage("Sin conexión: guardamos la solicitud y se enviará automáticamente.");
+      await finishCreateFlow();
     }
   }
 
   async function finishCreateFlow() {
-    await reloadRequests();
     setIsFormOpen(false);
     setSimilarRequest(null);
     setPendingDraft(null);
     setPickingLocation(false);
     setManualLocation(undefined);
+    setFormError("");
+    try {
+      await reloadRequests();
+    } catch {
+      setSyncMessage("La solicitud fue enviada. El mapa se actualizará al recuperar conexión.");
+    }
   }
 
   async function createDraftAnyway() {
@@ -246,7 +311,14 @@ function App() {
       await requestService.createRequest(pendingDraft);
       await finishCreateFlow();
     } catch (nextError) {
-      setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+      if (navigator.onLine) {
+        setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+        return;
+      }
+
+      requestQueue.enqueue(pendingDraft);
+      setSyncMessage("Sin conexión: guardamos la solicitud y se enviará automáticamente.");
+      await finishCreateFlow();
     }
   }
 
@@ -375,6 +447,12 @@ function App() {
         onChangeEmail={handleChangeEmail}
         onDeleteAccountData={handleDeleteAccountData}
       />
+
+      {syncMessage && (
+        <div className="fixed left-4 right-4 top-32 z-[1300] rounded-input bg-sos-primarySoft px-4 py-3 text-center text-[13px] font-extrabold text-sos-primary shadow-soft">
+          {syncMessage}
+        </div>
+      )}
 
       {activeView === "map" && (
         <section className={`absolute inset-x-0 bottom-0 ${contentTopClass}`}>
