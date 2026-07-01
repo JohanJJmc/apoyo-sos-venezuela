@@ -8,6 +8,7 @@ interface AccountScreenProps {
   session: AppSession;
   onBack: () => void;
   onSessionChange: (session: AppSession) => void;
+  onNotify?: (message: string, tone?: "info" | "success" | "danger") => void;
 }
 
 function sanitizePassword(value: string) {
@@ -19,7 +20,7 @@ function accountErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-export function AccountScreen({ session, onBack, onSessionChange }: AccountScreenProps) {
+export function AccountScreen({ session, onBack, onSessionChange, onNotify }: AccountScreenProps) {
   const [name, setName] = useState(session.name ?? "");
   const [email, setEmail] = useState(session.email ?? "");
   const [phone, setPhone] = useState(session.phone ?? "");
@@ -47,8 +48,11 @@ export function AccountScreen({ session, onBack, onSessionChange }: AccountScree
       nextSession = profileSession ?? nextSession ?? { ...session, name: name.trim(), phone: phone.trim(), email: email.trim() };
       onSessionChange(nextSession);
       setProfileMessage(nextMessage);
+      onNotify?.(nextMessage, "success");
     } catch (nextError) {
-      setError(accountErrorMessage(nextError, "No se pudo actualizar tu información."));
+      const message = accountErrorMessage(nextError, "No se pudo actualizar tu información.");
+      setError(message);
+      onNotify?.(message, "danger");
     } finally {
       setIsSavingProfile(false);
     }
@@ -68,8 +72,11 @@ export function AccountScreen({ session, onBack, onSessionChange }: AccountScree
       if (nextSession) onSessionChange(nextSession);
       setPassword("");
       setPasswordMessage("Contraseña actualizada.");
+      onNotify?.("Contraseña actualizada correctamente.", "success");
     } catch (nextError) {
-      setError(accountErrorMessage(nextError, "No se pudo cambiar la contraseña."));
+      const message = accountErrorMessage(nextError, "No se pudo cambiar la contraseña.");
+      setError(message);
+      onNotify?.(message, "danger");
     } finally {
       setIsSavingPassword(false);
     }

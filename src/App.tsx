@@ -59,6 +59,11 @@ function clearAuthActionFromUrl() {
   window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
 }
 
+type ToastState = {
+  message: string;
+  tone: "info" | "success" | "danger";
+};
+
 function App() {
   const [session, setSession] = useState<AppSession | null>(() => getStoredSession());
   const [requests, setRequests] = useState<Request[]>([]);
@@ -85,13 +90,14 @@ function App() {
   const [recenterSignal, setRecenterSignal] = useState(0);
   const [formError, setFormError] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
-  const [toastMessage, setToastMessage] = useState("");
+  const [toast, setToast] = useState<ToastState | null>(null);
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => isPasswordRecoveryUrl());
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
   const realtimeRefreshTimer = useRef<number | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -346,9 +352,17 @@ function App() {
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
   const currentUserPhone = session?.phone || "";
 
-  function showToast(message: string) {
-    setToastMessage(message);
-    window.setTimeout(() => setToastMessage(""), 6000);
+  function showToast(message: string, tone: ToastState["tone"] = "info") {
+    if (toastTimer.current) {
+      window.clearTimeout(toastTimer.current);
+    }
+    setToast({ message, tone });
+    const lineCount = Math.max(message.split("\n").length, Math.ceil(message.length / 44));
+    const duration = lineCount > 1 ? 4000 : 3000;
+    toastTimer.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimer.current = null;
+    }, duration);
   }
 
   async function handleModerationBlocked(error: unknown) {
@@ -357,11 +371,11 @@ function App() {
     const remaining = Math.max(SAFETY_BLOCK_THRESHOLD - status.violationCount, 0);
 
     if (status.blocked) {
-      showToast("Cuenta bloqueada por múltiples intentos de publicar contenido indebido o sospechoso.");
+      showToast("Cuenta bloqueada por múltiples intentos de publicar contenido indebido o sospechoso.", "danger");
       return "Cuenta bloqueada por seguridad. Contacta al equipo de NEXO si crees que fue un error.";
     }
 
-    showToast(`Texto indebido detectado. Intento ${status.violationCount}/${SAFETY_BLOCK_THRESHOLD}. Te quedan ${remaining} antes del bloqueo.`);
+    showToast(`Texto indebido detectado. Intento ${status.violationCount}/${SAFETY_BLOCK_THRESHOLD}. Te quedan ${remaining} antes del bloqueo.`, "danger");
     return reason;
   }
 
@@ -370,7 +384,7 @@ function App() {
     setSimilarRequest(null);
     setPendingDraft(null);
     if (await safetyService.isBlocked()) {
-      showToast("Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.");
+      showToast("Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.", "danger");
       return;
     }
     if (session?.isAnonymous) {
@@ -386,7 +400,7 @@ function App() {
     if (await safetyService.isBlocked()) {
       const blockedMessage = "Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.";
       setFormError(blockedMessage);
-      showToast(blockedMessage);
+      showToast(blockedMessage, "danger");
       return;
     }
 
@@ -417,15 +431,19 @@ function App() {
     try {
       await requestService.createRequest(draft);
       await finishCreateFlow();
+      showToast("Solicitud enviada correctamente.", "success");
     } catch (nextError) {
       if (navigator.onLine) {
-        setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+        const message = getErrorMessage(nextError, "No fue posible enviar la solicitud de apoyo.");
+        setFormError(message);
+        showToast(message, "danger");
         return;
       }
 
       requestQueue.enqueue(draft);
       setSyncMessage("Sin conexión: guardamos la solicitud y se enviará automáticamente.");
       await finishCreateFlow();
+      showToast("Sin conexión: solicitud guardada para enviarse luego.", "info");
     }
   }
 
@@ -448,15 +466,19 @@ function App() {
     try {
       await requestService.createRequest(pendingDraft);
       await finishCreateFlow();
+      showToast("Solicitud enviada correctamente.", "success");
     } catch (nextError) {
       if (navigator.onLine) {
-        setFormError(getErrorMessage(nextError, "Supabase rechazó la solicitud. Revisa que hayas ejecutado el SQL de permisos para usuarios autenticados."));
+        const message = getErrorMessage(nextError, "No fue posible enviar la solicitud de apoyo.");
+        setFormError(message);
+        showToast(message, "danger");
         return;
       }
 
       requestQueue.enqueue(pendingDraft);
       setSyncMessage("Sin conexión: guardamos la solicitud y se enviará automáticamente.");
       await finishCreateFlow();
+      showToast("Sin conexión: solicitud guardada para enviarse luego.", "info");
     }
   }
 
@@ -473,13 +495,13 @@ function App() {
     if (session?.isAnonymous) {
       setSelectedRequest(null);
       setAuthRequiredForRequest(true);
-      showToast("Para ofrecer apoyo debes crear una cuenta o iniciar sesión.");
+      showToast("Para ofrecer apoyo debes crear una cuenta o iniciar sesión.", "info");
       return;
     }
 
     void safetyService.isBlocked().then((blocked) => {
       if (blocked) {
-        showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.");
+        showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.", "danger");
         return;
       }
       setSupportRequestId(requestId);
@@ -490,7 +512,7 @@ function App() {
   async function submitSupportOffer(input: Partial<SupportReport>) {
     if (!supportRequestId) return;
     if (await safetyService.isBlocked()) {
-      showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.");
+      showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.", "danger");
       return;
     }
 
@@ -502,18 +524,24 @@ function App() {
       await requestService.offerSupport(supportRequestId, input);
       setSupportRequestId(null);
       await reloadRequests();
+      showToast("Apoyo enviado correctamente.", "success");
     } catch (nextError) {
       if (nextError instanceof ModerationBlockedError) {
         showToast(await handleModerationBlocked(nextError));
       } else {
-        showToast(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+        showToast(getErrorMessage(nextError, "Hubo un error al cargar el apoyo."), "danger");
       }
     }
   }
 
   async function confirmSupport(requestId: string, status: SupportReport["status"]) {
-    await requestService.confirmSupport(requestId, status);
-    await reloadRequests();
+    try {
+      await requestService.confirmSupport(requestId, status);
+      await reloadRequests();
+      showToast(status === "confirmed" ? "Solicitud aprobada como atendida." : "Ayuda parcial registrada.", "success");
+    } catch (nextError) {
+      showToast(getErrorMessage(nextError, "Hubo un error al aprobar la solicitud."), "danger");
+    }
   }
 
   async function cancelRequest(requestId: string) {
@@ -525,7 +553,7 @@ function App() {
       setSelectedRequest(null);
       await reloadRequests();
     } catch (nextError) {
-      showToast(getErrorMessage(nextError, "No se pudo cancelar el pedido."));
+      showToast(getErrorMessage(nextError, "No se pudo cancelar el pedido."), "danger");
     }
   }
 
@@ -610,12 +638,13 @@ function App() {
           clearAuthActionFromUrl();
         }}
         initialView="resetPassword"
+        onNotify={showToast}
       />
     );
   }
 
   if (!session) {
-    return <LoginScreen onLogin={handleLogin} />;
+    return <LoginScreen onLogin={handleLogin} onNotify={showToast} />;
   }
 
   if (authRequiredForRequest) {
@@ -625,6 +654,7 @@ function App() {
         initialView="signup"
         securityNotice
         onCancel={() => setAuthRequiredForRequest(false)}
+        onNotify={showToast}
       />
     );
   }
@@ -638,6 +668,7 @@ function App() {
           setSession(nextSession);
           saveSession(nextSession);
         }}
+        onNotify={showToast}
       />
     );
   }
@@ -660,9 +691,9 @@ function App() {
         </div>
       )}
 
-      {toastMessage && (
-        <div className="fixed left-4 right-4 top-48 z-[1400]">
-          <ToastMessage message={toastMessage} tone="danger" />
+      {toast && (
+        <div className="fixed bottom-[30px] left-1/2 z-[1400] w-[85vw] max-w-[412px] -translate-x-1/2 md:bottom-auto md:left-auto md:right-6 md:top-6 md:translate-x-0">
+          <ToastMessage message={toast.message} tone={toast.tone} />
         </div>
       )}
 

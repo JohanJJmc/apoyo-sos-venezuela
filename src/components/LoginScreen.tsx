@@ -8,6 +8,7 @@ interface LoginScreenProps {
   initialView?: AuthView;
   securityNotice?: boolean;
   onCancel?: () => void;
+  onNotify?: (message: string, tone?: "info" | "success" | "danger") => void;
 }
 
 type AuthView = "login" | "signup" | "verify" | "forgotPassword" | "resetPassword";
@@ -107,7 +108,7 @@ function PasswordField({
   );
 }
 
-export function LoginScreen({ onLogin, initialView = "login", securityNotice = false, onCancel }: LoginScreenProps) {
+export function LoginScreen({ onLogin, initialView = "login", securityNotice = false, onCancel, onNotify }: LoginScreenProps) {
   const [view, setView] = useState<AuthView>(initialView);
   const [fullName, setFullName] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
@@ -230,9 +231,12 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     setError("");
     try {
       const nextSession = await authService.updatePassword(resetPassword);
+      onNotify?.("Contraseña actualizada correctamente.", "success");
       if (nextSession) onLogin(nextSession);
     } catch (nextError) {
-      setError(authErrorMessage(nextError));
+      const message = authErrorMessage(nextError);
+      setError(message);
+      onNotify?.(message, "danger");
     } finally {
       setIsLoading(false);
     }
