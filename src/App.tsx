@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AccountScreen } from "./components/AccountScreen";
 import { AppHeader } from "./components/AppHeader";
 import { AppLayout } from "./components/AppLayout";
 import { EmptyState } from "./components/EmptyState";
@@ -68,6 +69,8 @@ function App() {
   const [syncMessage, setSyncMessage] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
   const realtimeRefreshTimer = useRef<number | null>(null);
@@ -174,6 +177,29 @@ function App() {
       if (nextSession) setSession(nextSession);
     });
   }, [session]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
+      }
+      if (nextSession?.user) {
+        const nextAppSession = {
+          userId: nextSession.user.id,
+          email: nextSession.user.email ?? undefined,
+          name: nextSession.user.user_metadata?.full_name ?? undefined,
+          phone: nextSession.user.user_metadata?.phone ?? undefined,
+        };
+        saveSession(nextAppSession);
+        setSession(nextAppSession);
+      }
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     function updateOnlineStatus() {
@@ -519,19 +545,6 @@ function App() {
     setRequests([]);
   }
 
-  async function handleChangeEmail() {
-    const nextEmail = window.prompt("Ingresa el nuevo correo:");
-    if (!nextEmail) return;
-
-    try {
-      const nextSession = await authService.updateEmail(nextEmail);
-      if (nextSession) setSession(nextSession);
-      window.alert("Revisa tu correo para confirmar el cambio.");
-    } catch (nextError) {
-      window.alert(getErrorMessage(nextError, "No se pudo cambiar el correo."));
-    }
-  }
-
   async function handleDeleteAccountData() {
     if (!session) return;
 
@@ -561,6 +574,18 @@ function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
+  if (isPasswordRecovery) {
+    return (
+      <LoginScreen
+        onLogin={(nextSession) => {
+          handleLogin(nextSession);
+          setIsPasswordRecovery(false);
+        }}
+        initialView="resetPassword"
+      />
+    );
+  }
+
   if (authRequiredForRequest) {
     return (
       <LoginScreen
@@ -572,6 +597,19 @@ function App() {
     );
   }
 
+  if (isAccountOpen) {
+    return (
+      <AccountScreen
+        session={session}
+        onBack={() => setIsAccountOpen(false)}
+        onSessionChange={(nextSession) => {
+          setSession(nextSession);
+          saveSession(nextSession);
+        }}
+      />
+    );
+  }
+
   return (
     <AppLayout>
       <AppHeader
@@ -579,8 +617,8 @@ function App() {
         isOffline={isOffline}
         session={session}
         onChangeView={setActiveView}
+        onOpenAccount={() => setIsAccountOpen(true)}
         onSignOut={handleSignOut}
-        onChangeEmail={handleChangeEmail}
         onDeleteAccountData={handleDeleteAccountData}
       />
 

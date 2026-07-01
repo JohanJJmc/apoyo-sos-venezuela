@@ -9,8 +9,8 @@ interface AppHeaderProps {
   isOffline: boolean;
   session: AppSession;
   onChangeView: (view: AppView) => void;
+  onOpenAccount: () => void;
   onSignOut: () => void;
-  onChangeEmail: () => void;
   onDeleteAccountData: () => void;
 }
 
@@ -19,8 +19,8 @@ export function AppHeader({
   isOffline,
   session,
   onChangeView,
+  onOpenAccount,
   onSignOut,
-  onChangeEmail,
   onDeleteAccountData,
 }: AppHeaderProps) {
   return (
@@ -29,8 +29,8 @@ export function AppHeader({
         <img src="/assets/nexo-logo.svg" alt="NEXO" className="block h-[54px] w-[54px] rounded-[10px]" />
         <AccountMenu
           session={session}
+          onOpenAccount={onOpenAccount}
           onSignOut={onSignOut}
-          onChangeEmail={onChangeEmail}
           onDeleteAccountData={onDeleteAccountData}
         />
       </div>

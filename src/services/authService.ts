@@ -7,6 +7,8 @@ type LocalSignup = {
   email: string;
   password: string;
   code: string;
+  fullName?: string;
+  phone?: string;
   createdAt: string;
 };
 
@@ -76,7 +78,7 @@ export const authService = {
       const code = createLocalCode();
       localStorage.setItem(
         LOCAL_SIGNUP_KEY,
-        JSON.stringify({ email: cleanEmail, password, code, createdAt: new Date().toISOString() }),
+        JSON.stringify({ email: cleanEmail, password, fullName: fullName.trim(), phone: phone.trim(), code, createdAt: new Date().toISOString() }),
       );
       console.info(`Código local de NEXO para ${cleanEmail}: ${code}`);
       return;
@@ -102,7 +104,7 @@ export const authService = {
         throw new Error("El código no es válido.");
       }
       localStorage.removeItem(LOCAL_SIGNUP_KEY);
-      return saveAndReturn({ userId: cleanEmail, email: cleanEmail });
+      return saveAndReturn({ userId: cleanEmail, email: cleanEmail, name: pending.fullName, phone: pending.phone });
     }
 
     const { data, error } = await supabase.auth.verifyOtp({
@@ -147,6 +149,25 @@ export const authService = {
     }
 
     const { data, error } = await supabase.auth.updateUser({ email: cleanEmail });
+    if (error) throw error;
+    if (data.user) return saveAndReturn(sessionFromSupabaseUser(data.user));
+    return null;
+  },
+
+  async resetPasswordForEmail(email: string) {
+    const cleanEmail = normalizeEmail(email);
+    if (!supabase) return;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: getAuthRedirectUrl(),
+    });
+    if (error) throw error;
+  },
+
+  async updatePassword(password: string) {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
     if (data.user) return saveAndReturn(sessionFromSupabaseUser(data.user));
     return null;

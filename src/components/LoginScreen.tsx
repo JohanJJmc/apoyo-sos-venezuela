@@ -10,7 +10,7 @@ interface LoginScreenProps {
   onCancel?: () => void;
 }
 
-type AuthView = "login" | "signup" | "verify";
+type AuthView = "login" | "signup" | "verify" | "forgotPassword" | "resetPassword";
 
 function authErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -119,7 +119,10 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [acceptedSafetyTerms, setAcceptedSafetyTerms] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -133,6 +136,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   const cleanLoginEmail = loginEmail.trim().toLowerCase();
   const cleanSignupEmail = signupEmail.trim().toLowerCase();
+  const cleanResetEmail = resetEmail.trim().toLowerCase();
   const confirmationEmail = cleanSignupEmail || cleanLoginEmail;
   const cleanFullName = fullName.trim();
   const cleanSignupPhone = signupPhone.trim();
@@ -192,6 +196,43 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     }
   }
 
+  async function submitForgotPassword() {
+    if (cleanResetEmail.length < 5) {
+      setError("Ingresa tu correo para enviarte el enlace de recuperación.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setInfo("");
+    try {
+      await authService.resetPasswordForEmail(cleanResetEmail);
+      setInfo("Te enviamos un correo para recuperar tu contraseña. Revisa tu bandeja de entrada o spam.");
+    } catch (nextError) {
+      setError(authErrorMessage(nextError));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function submitResetPassword() {
+    if (resetPassword.length < 6) {
+      setError("La nueva contraseña debe tener mínimo 6 caracteres.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    try {
+      const nextSession = await authService.updatePassword(resetPassword);
+      if (nextSession) onLogin(nextSession);
+    } catch (nextError) {
+      setError(authErrorMessage(nextError));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   function goTo(viewName: AuthView) {
     setView(viewName);
     setError("");
@@ -234,6 +275,70 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
         <button type="button" disabled={!canSignUp || isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Crear cuenta
+        </button>
+      </main>
+    );
+  }
+
+  if (view === "forgotPassword") {
+    return (
+      <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+        <BackButton onClick={() => goTo("login")} label="Recuperar contraseña" />
+        <p className="mt-10 text-[15px] font-semibold leading-snug text-sos-muted">
+          Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.
+        </p>
+
+        <form className="mt-8 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+          <input
+            name="nexo_recovery_email"
+            value={resetEmail}
+            onChange={(event) => setResetEmail(event.target.value)}
+            placeholder="Ingresa tu correo"
+            inputMode="email"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange"
+          />
+        </form>
+
+        {info && <p className="mt-5 rounded-input bg-sos-primarySoft p-4 text-[13px] font-extrabold text-sos-primary">{info}</p>}
+        {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
+        <div className="flex-1" />
+
+        <button type="button" disabled={isLoading} onClick={submitForgotPassword} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+          Enviar correo
+        </button>
+      </main>
+    );
+  }
+
+  if (view === "resetPassword") {
+    return (
+      <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+        <img src="/assets/nexo-logo.svg" alt="NEXO" className="mx-auto h-16 w-16 rounded-[12px]" />
+        <h1 className="mt-9 text-center text-[22px] font-extrabold">Nueva contraseña</h1>
+        <p className="mt-4 text-center text-[15px] font-semibold leading-snug text-sos-muted">
+          Crea una nueva contraseña para volver a entrar a tu cuenta.
+        </p>
+
+        <form className="mt-10" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+          <PasswordField
+            name="nexo_new_recovery_password"
+            value={resetPassword}
+            onChange={setResetPassword}
+            placeholder="Nueva contraseña"
+            visible={showResetPassword}
+            onToggle={() => setShowResetPassword((visible) => !visible)}
+            autoComplete="new-password"
+          />
+        </form>
+
+        {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
+        <div className="flex-1" />
+
+        <button type="button" disabled={isLoading} onClick={submitResetPassword} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+          Guardar contraseña
         </button>
       </main>
     );
@@ -294,7 +399,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         <PasswordField name="password" value={loginPassword} onChange={setLoginPassword} placeholder="Ingresa tu contraseña" visible={showLoginPassword} onToggle={() => setShowLoginPassword((visible) => !visible)} autoComplete="current-password" />
       </form>
 
-      <button type="button" className="mt-6 text-center text-[14px] font-extrabold text-sos-ink">
+      <button type="button" onClick={() => goTo("forgotPassword")} className="mt-6 text-center text-[14px] font-extrabold text-sos-ink">
         Olvidé mi contraseña
       </button>
 
