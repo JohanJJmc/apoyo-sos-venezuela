@@ -111,7 +111,7 @@ export const authService = {
     return saveAndReturn(sessionFromSupabaseUser(data.user));
   },
 
-  async resendSignupCode(email: string) {
+  async resendSignupEmail(email: string) {
     const cleanEmail = normalizeEmail(email);
 
     if (!supabase) {

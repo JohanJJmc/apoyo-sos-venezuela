@@ -17,6 +17,18 @@ function sanitizePassword(value: string) {
   return value.replace(/\s/g, "").slice(0, 12);
 }
 
+function maskEmail(value: string) {
+  const [name = "", domain = ""] = value.split("@");
+  if (!name || !domain) return "tu correo";
+
+  const visibleStart = name.slice(0, 1);
+  const visibleEnd = name.slice(-3);
+  const [domainName = "", domainEnd = ""] = domain.split(".");
+  const maskedDomain = domainName ? `${domainName.slice(0, 1)}**` : "***";
+
+  return `${visibleStart}****${visibleEnd}@${maskedDomain}.${domainEnd || "com"}`;
+}
+
 function PasswordToggleIcon({ visible }: { visible: boolean }) {
   return visible ? (
     <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
@@ -76,7 +88,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +102,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const cleanEmail = email.trim().toLowerCase();
   const canLogin = cleanEmail.length > 4 && password.length >= 6;
   const canSignUp = canLogin && password === passwordConfirm;
-  const canVerify = cleanEmail.length > 4 && code.trim().length >= 6;
 
   async function submitLogin() {
     if (!canLogin) return;
@@ -115,7 +125,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     setError("");
     try {
       await authService.signUp(cleanEmail, password);
-      setInfo(`Te enviamos un código a ${cleanEmail}. Revisa tu correo.`);
+      setInfo(`Te enviamos un correo de confirmación a ${cleanEmail}.`);
       setResendSeconds(60);
       setView("verify");
     } catch (nextError) {
@@ -125,26 +135,13 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     }
   }
 
-  async function submitVerify() {
-    if (!canVerify) return;
-    setIsLoading(true);
-    setError("");
-    try {
-      onLogin(await authService.verifySignupCode(cleanEmail, code));
-    } catch (nextError) {
-      setError(authErrorMessage(nextError));
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function resendCode() {
+  async function resendEmail() {
     if (!cleanEmail || resendSeconds > 0) return;
     setIsLoading(true);
     setError("");
     try {
-      await authService.resendSignupCode(cleanEmail);
-      setInfo("Código reenviado. Puede tardar hasta 1 minuto.");
+      await authService.resendSignupEmail(cleanEmail);
+      setInfo("Correo reenviado. Puede tardar hasta 1 minuto.");
       setResendSeconds(60);
     } catch (nextError) {
       setError(authErrorMessage(nextError));
@@ -189,30 +186,36 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   if (view === "verify") {
     return (
       <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
-        <button type="button" onClick={() => goTo("signup")} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
-          ‹
-        </button>
-        <h1 className="mt-3 text-[20px] font-extrabold">Confirma tu cuenta</h1>
-        <p className="mt-16 text-[14px] font-semibold text-sos-muted">
-          Ingresa el código de verificación que te enviamos al correo: {cleanEmail || "tu correo"}. El código es válido por unos minutos.
-        </p>
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={() => goTo("signup")} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
+            ‹
+          </button>
+          <h1 className="text-[22px] font-extrabold">Confirma tu cuenta</h1>
+        </div>
 
-        <div className="mt-8 space-y-4">
-          <input value={code} onChange={(event) => setCode(event.target.value)} placeholder="Ingresa el código enviado" inputMode="numeric" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <p className="rounded-input bg-[#EAF6FF] p-3 text-[13px] font-extrabold text-[#0077C8]">
-            El envío del código puede tardar hasta 1 minuto. Verifica spam o la papelera de tu correo electrónico.
+        <div className="flex flex-1 flex-col items-center justify-center py-8">
+          <img src="/assets/email-vector.svg" alt="" className="h-24 w-24" />
+          <p className="mt-10 text-center text-[18px] font-semibold leading-snug text-sos-ink">
+            Te enviamos un email de confirmación al correo:
+            <br />
+            {maskEmail(cleanEmail)}. Por favor dale clic al link interno para terminar el registro.
           </p>
-          <button type="button" disabled={resendSeconds > 0 || isLoading} onClick={resendCode} className="min-h-12 w-full rounded-pill border border-sos-border px-4 text-[14px] font-extrabold text-sos-muted disabled:opacity-50">
-            {resendSeconds > 0 ? `Reenviar el código ${resendSeconds}s` : "Reenviar el código"}
+
+          <p className="mt-20 w-full rounded-input bg-[#EAF6FF] p-4 text-[13px] font-extrabold leading-snug text-[#0077C8]">
+            El envío del correo puede tardar hasta 1 minuto. Verifica la carpeta de spam o la papelera de tu correo electrónico, o haz clic en "Reenviar correo".
+          </p>
+
+          <button type="button" disabled={resendSeconds > 0 || isLoading} onClick={resendEmail} className="mt-8 flex min-h-12 w-[82%] items-center justify-center gap-8 rounded-pill border border-sos-border px-4 text-[14px] font-extrabold text-sos-muted disabled:opacity-50">
+            <span>{resendSeconds > 0 ? "Reenviar email" : "Reenviar correo"}</span>
+            {resendSeconds > 0 && <span className="font-semibold text-sos-ink">{resendSeconds}s</span>}
           </button>
         </div>
 
         {info && <p className="mt-4 text-[13px] font-bold text-sos-resolved">{info}</p>}
         {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
-        <div className="flex-1" />
 
-        <button type="button" disabled={!canVerify || isLoading} onClick={submitVerify} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
-          Confirmar cuenta
+        <button type="button" onClick={() => goTo("login")} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft">
+          Crear cuenta
         </button>
       </main>
     );
