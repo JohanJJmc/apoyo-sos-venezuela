@@ -105,7 +105,6 @@ function App() {
   const mapGeocodeTimer = useRef<number | null>(null);
   const realtimeRefreshTimer = useRef<number | null>(null);
   const toastTimer = useRef<number | null>(null);
-  const countryWarningRef = useRef("");
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -344,13 +343,6 @@ function App() {
         setMapCenterAddress(details.address || "Dirección no encontrada. Mueve un poco el mapa.");
         setMapCenterCountryCode(details.countryCode ?? "");
         setMapCenterCountryName(details.countryName ?? "");
-        if (details.countryCode && userCountryCode && details.countryCode !== userCountryCode) {
-          const warningKey = `${userCountryCode}:${details.countryCode}`;
-          if (countryWarningRef.current !== warningKey) {
-            countryWarningRef.current = warningKey;
-            showToast(`Por veracidad, solo puedes crear solicitudes dentro de tu país${userCountryName ? ` (${userCountryName})` : ""}.`, "info");
-          }
-        }
       }
     } catch {
       if (mapGeocodeRequest.current === requestId) {
