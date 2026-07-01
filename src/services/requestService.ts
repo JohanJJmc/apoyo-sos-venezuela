@@ -106,7 +106,6 @@ function requestToInsert(
     longitude: input.longitude,
     status: "pending" as const,
     partial_support: false,
-    resolved_at: null,
     created_by: getCurrentUserId(),
     requester_name: input.requesterName ?? null,
     requester_phone: input.requesterPhone ?? null,
@@ -206,7 +205,17 @@ export const requestService = {
     };
 
     const { error: requestError } = await supabase.from("requests").update(updates).eq("id", requestId);
-    if (requestError) throw requestError;
+    if (requestError) {
+      if (requestError.message.toLowerCase().includes("resolved_at")) {
+        const { error: retryError } = await supabase
+          .from("requests")
+          .update({ status: updates.status, partial_support: updates.partial_support })
+          .eq("id", requestId);
+        throwSupabaseError(retryError);
+      } else {
+        throwSupabaseError(requestError);
+      }
+    }
 
     const { data: latestReports, error: reportListError } = await supabase
       .from("support_reports")

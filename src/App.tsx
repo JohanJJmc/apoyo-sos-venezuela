@@ -147,11 +147,11 @@ function App() {
     try {
       const address = await reverseGeocodeAddress(location);
       if (manualGeocodeRequest.current === requestId) {
-        setManualAddress(address);
+        setManualAddress(address || "Dirección no encontrada. Mueve un poco el mapa o usa GPS.");
       }
     } catch {
       if (manualGeocodeRequest.current === requestId) {
-        setManualAddress(`${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+        setManualAddress("Dirección no encontrada. Mueve un poco el mapa o usa GPS.");
       }
     } finally {
       if (manualGeocodeRequest.current === requestId) setIsDetectingManualAddress(false);
@@ -166,11 +166,11 @@ function App() {
     try {
       const address = await reverseGeocodeAddress(location);
       if (mapGeocodeRequest.current === requestId) {
-        setMapCenterAddress(address);
+        setMapCenterAddress(address || "Dirección no encontrada. Mueve un poco el mapa.");
       }
     } catch {
       if (mapGeocodeRequest.current === requestId) {
-        setMapCenterAddress(`${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`);
+        setMapCenterAddress("Dirección no encontrada. Mueve un poco el mapa.");
       }
     } finally {
       if (mapGeocodeRequest.current === requestId) setIsDetectingMapCenterAddress(false);

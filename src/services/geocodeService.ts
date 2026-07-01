@@ -14,11 +14,7 @@ type BigDataCloudResponse = {
   };
 };
 
-function coordinateLabel(location: Coordinates) {
-  return `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
-}
-
-async function fetchJson<T>(url: string, timeoutMs = 5000): Promise<T> {
+async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
@@ -74,5 +70,5 @@ export async function reverseGeocodeAddress(location: Coordinates) {
     // Fall through to coordinates.
   }
 
-  return coordinateLabel(location);
+  return "";
 }
