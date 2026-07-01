@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
-import { createRequestMarker } from "./RequestMarker";
+import { createRequestClusterMarker, createRequestMarker } from "./RequestMarker";
 import type { Coordinates, Request } from "../types/request";
 
 interface MapScreenProps {
@@ -14,6 +14,44 @@ interface MapScreenProps {
 }
 
 const DEFAULT_CENTER: Coordinates = { latitude: 10.5, longitude: -66.9167 };
+const CLUSTER_RADIUS_PX = 58;
+
+type RequestCluster = {
+  requests: Request[];
+  point: L.Point;
+  latitude: number;
+  longitude: number;
+};
+
+function clusterRequests(mapInstance: L.Map, requests: Request[]) {
+  const clusters: RequestCluster[] = [];
+
+  requests.forEach((request) => {
+    const point = mapInstance.latLngToLayerPoint([request.latitude, request.longitude]);
+    const cluster = clusters.find((item) => item.point.distanceTo(point) <= CLUSTER_RADIUS_PX);
+
+    if (!cluster) {
+      clusters.push({
+        requests: [request],
+        point,
+        latitude: request.latitude,
+        longitude: request.longitude,
+      });
+      return;
+    }
+
+    const nextCount = cluster.requests.length + 1;
+    cluster.requests.push(request);
+    cluster.point = L.point(
+      (cluster.point.x * (nextCount - 1) + point.x) / nextCount,
+      (cluster.point.y * (nextCount - 1) + point.y) / nextCount,
+    );
+    cluster.latitude = (cluster.latitude * (nextCount - 1) + request.latitude) / nextCount;
+    cluster.longitude = (cluster.longitude * (nextCount - 1) + request.longitude) / nextCount;
+  });
+
+  return clusters;
+}
 
 export function MapScreen({
   requests,
@@ -54,13 +92,45 @@ export function MapScreen({
 
   useEffect(() => {
     if (!map.current || !markers.current) return;
-    markers.current.clearLayers();
 
-    requests.forEach((request) => {
-      L.marker([request.latitude, request.longitude], { icon: createRequestMarker(request.status, request.category) })
-        .addTo(markers.current!)
-        .on("click", () => onSelectRequest(request));
-    });
+    const renderMarkers = () => {
+      if (!map.current || !markers.current) return;
+      markers.current.clearLayers();
+
+      clusterRequests(map.current, requests).forEach((cluster) => {
+        if (cluster.requests.length === 1) {
+          const request = cluster.requests[0];
+          L.marker([request.latitude, request.longitude], { icon: createRequestMarker(request.status, request.category) })
+            .addTo(markers.current!)
+            .on("click", () => onSelectRequest(request));
+          return;
+        }
+
+        const hasPending = cluster.requests.some((request) => request.status === "pending");
+        const clusterStatus = hasPending ? "pending" : "resolved";
+        L.marker([cluster.latitude, cluster.longitude], {
+          icon: createRequestClusterMarker(cluster.requests.length, clusterStatus),
+        })
+          .addTo(markers.current!)
+          .on("click", () => {
+            const bounds = L.latLngBounds(cluster.requests.map((request) => [request.latitude, request.longitude]));
+            if (!bounds.isValid()) return;
+
+            if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+              map.current?.setView(bounds.getCenter(), Math.min((map.current?.getZoom() ?? 14) + 2, 18));
+              return;
+            }
+
+            map.current?.fitBounds(bounds.pad(0.35), { maxZoom: 18 });
+          });
+      });
+    };
+
+    renderMarkers();
+    map.current.on("zoomend moveend", renderMarkers);
+    return () => {
+      map.current?.off("zoomend moveend", renderMarkers);
+    };
   }, [requests, onSelectRequest]);
 
   useEffect(() => {

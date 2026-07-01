@@ -29,3 +29,14 @@ export function createRequestMarker(status: RequestStatus, category: string) {
     iconAnchor: [19, 19],
   });
 }
+
+export function createRequestClusterMarker(count: number, status: RequestStatus) {
+  const color = status === "resolved" ? colors.resolved : colors.pending;
+
+  return L.divIcon({
+    className: "",
+    html: `<div class="sos-cluster-marker" style="background:${color}"><span>${count}</span></div>`,
+    iconSize: [56, 64],
+    iconAnchor: [28, 58],
+  });
+}
