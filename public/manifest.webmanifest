@@ -8,6 +8,18 @@
   "theme_color": "#be001c",
   "icons": [
     {
+      "src": "/assets/nexo-app-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/nexo-app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/assets/nexo-logo.svg",
       "sizes": "400x400",
       "type": "image/svg+xml",

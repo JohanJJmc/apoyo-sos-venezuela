@@ -1,5 +1,11 @@
-const CACHE_NAME = "nexo-v2";
-const ASSETS = ["/", "/manifest.webmanifest", "/assets/nexo-logo.svg", "/assets/app-icon.png"];
+const CACHE_NAME = "nexo-v3";
+const ASSETS = [
+  "/",
+  "/manifest.webmanifest",
+  "/icon.svg?v=2",
+  "/assets/nexo-logo.svg",
+  "/assets/nexo-app-icon.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
