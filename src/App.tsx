@@ -17,6 +17,7 @@ import { authService } from "./services/authService";
 import { reverseGeocodeAddress } from "./services/geocodeService";
 import { requestQueue } from "./services/requestQueue";
 import { requestService } from "./services/requestService";
+import { supabase } from "./services/supabaseClient";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
 
@@ -64,6 +65,7 @@ function App() {
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
+  const realtimeRefreshTimer = useRef<number | null>(null);
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -126,6 +128,40 @@ function App() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [flushQueuedRequests, reloadRequests, session]);
+
+  useEffect(() => {
+    if (!session || !supabase) return;
+    const realtimeClient = supabase;
+
+    function scheduleRealtimeReload() {
+      if (realtimeRefreshTimer.current) {
+        window.clearTimeout(realtimeRefreshTimer.current);
+      }
+
+      realtimeRefreshTimer.current = window.setTimeout(() => {
+        void reloadRequests();
+      }, 350);
+    }
+
+    const channel = realtimeClient
+      .channel("nexo-requests-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "requests" }, scheduleRealtimeReload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_reports" }, scheduleRealtimeReload)
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          setSyncMessage("Realtime desconectado temporalmente. Seguiremos actualizando cada 20 segundos.");
+          window.setTimeout(() => setSyncMessage(""), 5000);
+        }
+      });
+
+    return () => {
+      if (realtimeRefreshTimer.current) {
+        window.clearTimeout(realtimeRefreshTimer.current);
+        realtimeRefreshTimer.current = null;
+      }
+      void realtimeClient.removeChannel(channel);
+    };
+  }, [reloadRequests, session]);
 
   useEffect(() => {
     if (session) return;

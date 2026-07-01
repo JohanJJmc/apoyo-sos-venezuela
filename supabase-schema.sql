@@ -99,6 +99,33 @@ create index if not exists requests_resolved_at_idx on public.requests(resolved_
 where status = 'resolved';
 create index if not exists support_reports_request_id_idx on public.support_reports(request_id);
 
+alter table public.requests replica identity full;
+alter table public.support_reports replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'requests'
+  ) then
+    alter publication supabase_realtime add table public.requests;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'support_reports'
+  ) then
+    alter publication supabase_realtime add table public.support_reports;
+  end if;
+end;
+$$;
+
 create or replace function public.delete_resolved_requests_after_48_hours()
 returns void
 language sql
