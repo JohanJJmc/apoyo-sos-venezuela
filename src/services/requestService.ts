@@ -6,6 +6,17 @@ import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 export const SIMILAR_REQUEST_RADIUS_METERS = 200;
 
+function throwSupabaseError(error: { message?: string; details?: string | null; hint?: string | null; code?: string } | null) {
+  if (!error) return;
+
+  const message = [error.message, error.details, error.hint].filter(Boolean).join(" ");
+  if (message.toLowerCase().includes("row-level security")) {
+    throw new Error("Supabase bloqueó la solicitud por permisos. Ejecuta el SQL de permisos para usuarios autenticados.");
+  }
+
+  throw new Error(message || "Supabase rechazó la solicitud.");
+}
+
 type RequestRow = {
   id: string;
   category: string;
@@ -140,7 +151,7 @@ export const requestService = {
     if (!supabase) return localRequestStore.createRequest(input);
 
     const { data, error } = await supabase.from("requests").insert(requestToInsert(input)).select("*").single();
-    if (error) throw error;
+    throwSupabaseError(error);
     return mapRequest(data as RequestRow);
   },
 

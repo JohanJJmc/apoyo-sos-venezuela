@@ -19,6 +19,14 @@ import { requestService } from "./services/requestService";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+  return fallback;
+}
+
 function App() {
   const [session, setSession] = useState<AppSession | null>(() => getStoredSession());
   const [requests, setRequests] = useState<Request[]>([]);
@@ -211,7 +219,7 @@ function App() {
       await requestService.createRequest(draft);
       await finishCreateFlow();
     } catch (nextError) {
-      setFormError(nextError instanceof Error ? nextError.message : "No se pudo publicar la solicitud. Intenta de nuevo.");
+      setFormError(getErrorMessage(nextError, "No se pudo publicar la solicitud. Intenta de nuevo."));
     }
   }
 
@@ -311,7 +319,7 @@ function App() {
       if (nextSession) setSession(nextSession);
       window.alert("Revisa tu correo para confirmar el cambio.");
     } catch (nextError) {
-      window.alert(nextError instanceof Error ? nextError.message : "No se pudo cambiar el correo.");
+      window.alert(getErrorMessage(nextError, "No se pudo cambiar el correo."));
     }
   }
 
@@ -336,7 +344,7 @@ function App() {
       setIsFormOpen(false);
       setSupportRequestId(null);
     } catch (nextError) {
-      window.alert(nextError instanceof Error ? nextError.message : "No se pudo eliminar la cuenta.");
+      window.alert(getErrorMessage(nextError, "No se pudo eliminar la cuenta."));
     }
   }
 
