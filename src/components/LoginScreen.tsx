@@ -110,6 +110,7 @@ function PasswordField({
 export function LoginScreen({ onLogin, initialView = "login", securityNotice = false, onCancel }: LoginScreenProps) {
   const [view, setView] = useState<AuthView>(initialView);
   const [fullName, setFullName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
@@ -134,9 +135,11 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const cleanSignupEmail = signupEmail.trim().toLowerCase();
   const confirmationEmail = cleanSignupEmail || cleanLoginEmail;
   const cleanFullName = fullName.trim();
+  const cleanSignupPhone = signupPhone.trim();
   const canLogin = cleanLoginEmail.length > 4 && loginPassword.length >= 6;
   const canSignUp =
     cleanFullName.length >= 3 &&
+    cleanSignupPhone.length >= 6 &&
     cleanSignupEmail.length > 4 &&
     signupPassword.length >= 6 &&
     signupPassword === passwordConfirm &&
@@ -157,13 +160,13 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   async function submitSignUp() {
     if (!canSignUp) {
-      setError("Completa nombre y apellido, correo válido, contraseñas iguales y acepta el aviso de seguridad.");
+      setError("Completa nombre, teléfono, correo válido, contraseñas iguales y acepta el aviso de seguridad.");
       return;
     }
     setIsLoading(true);
     setError("");
     try {
-      await authService.signUp(cleanSignupEmail, signupPassword, cleanFullName);
+      await authService.signUp(cleanSignupEmail, signupPassword, cleanFullName, cleanSignupPhone);
       setInfo(`Te enviamos un correo de confirmación a ${cleanSignupEmail}.`);
       setResendSeconds(60);
       setView("verify");
@@ -205,6 +208,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
         <form className="mt-8 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <input name="nexo_register_phone" value={signupPhone} onChange={(event) => setSignupPhone(event.target.value)} placeholder="Teléfono" inputMode="tel" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <PasswordField name="nexo_register_secret_one" value={signupPassword} onChange={setSignupPassword} placeholder="Ingresa tu contraseña" visible={showSignupPassword} onToggle={() => setShowSignupPassword((visible) => !visible)} autoComplete="new-password" />
           <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />

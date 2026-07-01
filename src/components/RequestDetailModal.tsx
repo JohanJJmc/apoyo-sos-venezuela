@@ -62,7 +62,12 @@ export function RequestDetailModal({
                 <p className="text-[15px] font-extrabold text-sos-ink">
                   {latestSupport.anonymous ? "Alguien ofreció apoyo" : `${latestSupport.supporterName || "Persona solidaria"} ofreció apoyo`}
                 </p>
-                {latestSupport.supporterPhone && <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{latestSupport.supporterPhone}</p>}
+                {isOwner && latestSupport.supporterPhone && (
+                  <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{latestSupport.supporterPhone}</p>
+                )}
+                {!isOwner && latestSupport.supporterPhone && (
+                  <p className="mt-1 text-[13px] font-extrabold text-sos-muted">Teléfono visible solo para quien creó la solicitud</p>
+                )}
                 {latestSupport.status === "pending_confirmation" && (
                   <p className="mt-1 text-[13px] font-extrabold text-sos-primary">Esperando confirmación</p>
                 )}

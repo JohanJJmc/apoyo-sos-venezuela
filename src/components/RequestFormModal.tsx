@@ -35,6 +35,7 @@ interface RequestFormModalProps {
   pickingLocation: boolean;
   error?: string;
   currentUserName?: string;
+  currentUserPhone?: string;
 }
 
 export function RequestFormModal({
@@ -50,6 +51,7 @@ export function RequestFormModal({
   pickingLocation,
   error,
   currentUserName = "",
+  currentUserPhone = "",
 }: RequestFormModalProps) {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [item, setItem] = useState(CATEGORY_ITEMS[CATEGORIES[0]][0]);
@@ -138,7 +140,7 @@ export function RequestFormModal({
         latitude: location.latitude,
         longitude: location.longitude,
         requesterName: requesterAnonymous ? undefined : currentUserName.trim() || requesterName.trim() || undefined,
-        requesterPhone: requesterAnonymous ? undefined : requesterPhone.trim() || undefined,
+        requesterPhone: requesterAnonymous ? undefined : currentUserPhone.trim() || requesterPhone.trim() || undefined,
         requesterAnonymous,
         address,
       });
@@ -168,8 +170,8 @@ export function RequestFormModal({
             />
             <TextInput
               label=""
-              value={requesterPhone}
-              disabled={requesterAnonymous}
+              value={requesterAnonymous ? "" : currentUserPhone || requesterPhone}
+              disabled
               onChange={(event) => setRequesterPhone(event.target.value)}
               placeholder="📞 Telefono"
             />

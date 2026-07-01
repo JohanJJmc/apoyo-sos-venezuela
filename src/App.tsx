@@ -300,10 +300,30 @@ function App() {
   );
   const contentTopClass = isOffline ? "top-48" : "top-44";
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
+  const currentUserPhone = session?.phone || "";
 
   function showToast(message: string) {
     setToastMessage(message);
     window.setTimeout(() => setToastMessage(""), 6000);
+  }
+
+  async function ensurePhoneOnProfile() {
+    if (!session || session.isAnonymous || session.phone) return true;
+
+    const phone = window.prompt("Para seguridad y contacto, ingresa tu teléfono:");
+    if (!phone?.trim()) {
+      showToast("Debes agregar un teléfono para publicar solicitudes u ofrecer apoyo.");
+      return false;
+    }
+
+    try {
+      const nextSession = await authService.updateProfile({ name: session.name, phone });
+      if (nextSession) setSession(nextSession);
+      return true;
+    } catch (nextError) {
+      showToast(getErrorMessage(nextError, "No se pudo guardar el teléfono."));
+      return false;
+    }
   }
 
   async function handleModerationBlocked(error: unknown) {
@@ -332,6 +352,7 @@ function App() {
       setAuthRequiredForRequest(true);
       return;
     }
+    if (!(await ensurePhoneOnProfile())) return;
     if (mapCenterAddress) setDetectedAddress(mapCenterAddress);
     setIsFormOpen(true);
   }
@@ -425,13 +446,23 @@ function App() {
   }
 
   function offerSupport(requestId: string) {
+    if (session?.isAnonymous) {
+      setSelectedRequest(null);
+      setAuthRequiredForRequest(true);
+      showToast("Para ofrecer apoyo debes crear una cuenta o iniciar sesión.");
+      return;
+    }
+
     void safetyService.isBlocked().then((blocked) => {
       if (blocked) {
         showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.");
         return;
       }
-      setSupportRequestId(requestId);
-      setSelectedRequest(null);
+      void ensurePhoneOnProfile().then((hasPhone) => {
+        if (!hasPhone) return;
+        setSupportRequestId(requestId);
+        setSelectedRequest(null);
+      });
     });
   }
 
@@ -709,6 +740,7 @@ function App() {
         pickingLocation={pickingLocation}
         error={formError}
         currentUserName={currentUserName}
+        currentUserPhone={currentUserPhone}
       />
 
       {pickingLocation && (
@@ -758,6 +790,7 @@ function App() {
         isOpen={Boolean(supportRequestId)}
         currentLocation={userLocation ?? manualLocation}
         currentUserName={currentUserName}
+        currentUserPhone={currentUserPhone}
         onClose={() => setSupportRequestId(null)}
         onSubmit={submitSupportOffer}
       />

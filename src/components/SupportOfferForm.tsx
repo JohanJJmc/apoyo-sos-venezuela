@@ -8,11 +8,12 @@ interface SupportOfferFormProps {
   isOpen: boolean;
   currentLocation?: Coordinates;
   currentUserName?: string;
+  currentUserPhone?: string;
   onClose: () => void;
   onSubmit: (input: Partial<SupportReport>) => void;
 }
 
-export function SupportOfferForm({ isOpen, currentLocation, currentUserName = "", onClose, onSubmit }: SupportOfferFormProps) {
+export function SupportOfferForm({ isOpen, currentLocation, currentUserName = "", currentUserPhone = "", onClose, onSubmit }: SupportOfferFormProps) {
   const [supporterName, setSupporterName] = useState("");
   const [supporterPhone, setSupporterPhone] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -75,8 +76,8 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
             />
             <TextInput
               label=""
-              value={supporterPhone}
-              disabled={anonymous}
+              value={anonymous ? "" : currentUserPhone || supporterPhone}
+              disabled
               onChange={(event) => setSupporterPhone(event.target.value)}
               placeholder="📞 Telefono"
             />
@@ -119,7 +120,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
             onClick={() =>
               onSubmit({
                 supporterName: anonymous ? undefined : currentUserName.trim() || supporterName.trim() || undefined,
-                supporterPhone: anonymous ? undefined : supporterPhone.trim() || undefined,
+                supporterPhone: anonymous ? undefined : currentUserPhone.trim() || supporterPhone.trim() || undefined,
                 anonymous,
                 details,
                 photoUrl,

@@ -18,11 +18,12 @@ function getAuthRedirectUrl() {
   return import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
 }
 
-function sessionFromSupabaseUser(user: { id: string; email?: string | null; user_metadata?: { full_name?: string } | null }): AppSession {
+function sessionFromSupabaseUser(user: { id: string; email?: string | null; user_metadata?: { full_name?: string; phone?: string } | null }): AppSession {
   return {
     userId: user.id,
     email: user.email ?? undefined,
     name: user.user_metadata?.full_name ?? undefined,
+    phone: user.user_metadata?.phone ?? undefined,
   };
 }
 
@@ -68,7 +69,7 @@ export const authService = {
     return saveAndReturn(sessionFromSupabaseUser(data.user));
   },
 
-  async signUp(email: string, password: string, fullName: string) {
+  async signUp(email: string, password: string, fullName: string, phone: string) {
     const cleanEmail = normalizeEmail(email);
 
     if (!supabase) {
@@ -86,7 +87,7 @@ export const authService = {
       password,
       options: {
         emailRedirectTo: getAuthRedirectUrl(),
-        data: { full_name: fullName.trim() },
+        data: { full_name: fullName.trim(), phone: phone.trim() },
       },
     });
     if (error) throw error;
@@ -146,6 +147,22 @@ export const authService = {
     }
 
     const { data, error } = await supabase.auth.updateUser({ email: cleanEmail });
+    if (error) throw error;
+    if (data.user) return saveAndReturn(sessionFromSupabaseUser(data.user));
+    return null;
+  },
+
+  async updateProfile(input: { name?: string; phone?: string }) {
+    if (!supabase) {
+      return null;
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        ...(input.name ? { full_name: input.name.trim() } : {}),
+        ...(input.phone ? { phone: input.phone.trim() } : {}),
+      },
+    });
     if (error) throw error;
     if (data.user) return saveAndReturn(sessionFromSupabaseUser(data.user));
     return null;
