@@ -1,12 +1,70 @@
 const OPENAI_MODERATION_URL = "https://api.openai.com/v1/moderations";
 
-const highRiskPatterns = [
-  /\b(venta|vendo|comprar|compro|intercambio|distribuir|distribucion)\b.*\b(droga|drogas|cocaina|cocaína|marihuana|fentanilo|heroina|heroína|crack|metanfetamina)\b/i,
-  /\b(droga|drogas|cocaina|cocaína|marihuana|fentanilo|heroina|heroína|crack|metanfetamina)\b.*\b(venta|vendo|comprar|compro|intercambio|distribuir|distribucion)\b/i,
-  /\b(venta|vendo|comprar|compro|intercambio|traslado|transportar)\b.*\b(arma|armas|pistola|rifle|fusil|municion|munición|explosivo|granada)\b/i,
-  /\b(arma|armas|pistola|rifle|fusil|municion|munición|explosivo|granada)\b.*\b(venta|vendo|comprar|compro|intercambio|traslado|transportar)\b/i,
-  /\b(trafico|tráfico|traficar|venta|vender|traslado ilegal)\b.*\b(persona|personas|menor|menores|niño|niña|niños|niñas|mujer|mujeres)\b/i,
-  /\b(secuestro|secuestrar|extorsion|extorsión|amenaza|amenazar|sicario|sicariato)\b/i,
+const validationTree = [
+  {
+    id: "drugs_commerce",
+    reason: "Contenido relacionado con venta, compra o distribución de drogas.",
+    any: ["droga", "drogas", "cocaina", "marihuana", "fentanilo", "heroina", "crack", "metanfetamina", "perico", "tusi"],
+    context: ["venta", "vendo", "comprar", "compro", "busco", "intercambio", "distribuir", "distribucion", "entrega", "delivery"],
+  },
+  {
+    id: "weapons_commerce",
+    reason: "Contenido relacionado con venta, compra o traslado de armas.",
+    any: ["arma", "armas", "pistola", "rifle", "fusil", "municion", "balas", "explosivo", "granada"],
+    context: ["venta", "vendo", "comprar", "compro", "busco", "intercambio", "traslado", "transportar", "entrega"],
+  },
+  {
+    id: "human_trafficking",
+    reason: "Contenido relacionado con tráfico, venta, retención o traslado ilegal de personas.",
+    any: ["persona", "personas", "menor", "menores", "nino", "nina", "ninos", "ninas", "mujer", "mujeres", "hombre", "hombres"],
+    context: ["trafico", "traficar", "trata", "venta", "vender", "traslado ilegal", "retener", "retenida", "retenido", "captar", "captacion"],
+  },
+  {
+    id: "coercion_or_violence",
+    reason: "Contenido relacionado con secuestro, extorsión, amenazas o violencia organizada.",
+    direct: ["secuestro", "secuestrar", "secuestrado", "secuestrada", "extorsion", "amenaza", "amenazar", "sicario", "sicariato"],
+  },
+  {
+    id: "minor_sexualization",
+    reason: "Contenido que sexualiza o explota a niños, niñas, menores o adolescentes.",
+    any: ["nino", "nina", "ninos", "ninas", "menor", "menores", "adolescente", "adolescentes", "bebe", "chamo", "chama"],
+    context: [
+      "obediente",
+      "apartadita",
+      "apartadito",
+      "sumisa",
+      "sumiso",
+      "desnuda",
+      "desnudo",
+      "carinosa",
+      "carinoso",
+      "sexi",
+      "sexy",
+      "sensual",
+      "virgen",
+      "sexo",
+      "sexual",
+      "discreta",
+      "discreto",
+    ],
+  },
+  {
+    id: "sexualized_person_description",
+    reason: "Contenido sexualizado o sospechoso que no corresponde a una solicitud legítima de ayuda.",
+    any: ["mujer", "mujeres", "hombre", "hombres", "chica", "chico", "persona", "personas"],
+    context: ["desnuda", "desnudo", "sexi", "sexy", "sexo", "sexual", "sumisa", "sumiso", "obediente", "apartadita", "apartadito"],
+  },
+  {
+    id: "skin_color_plus_sexualized_descriptor",
+    reason: "Contenido sospechoso por combinar color de piel o rasgos físicos con descripciones sexualizadas o de sometimiento.",
+    any: ["blanca", "blanco", "morena", "moreno", "negra", "negro", "triguena", "trigueno", "piel clara", "piel oscura", "color de piel"],
+    context: ["obediente", "apartadita", "apartadito", "sumisa", "sumiso", "desnuda", "desnudo", "carinosa", "carinoso", "sexi", "sexy", "sensual"],
+  },
+  {
+    id: "sexual_exploitation_direct",
+    reason: "Contenido relacionado con explotación sexual o prostitución.",
+    direct: ["explotacion sexual", "pornografia infantil", "prostitucion", "servicio sexual", "abuso sexual"],
+  },
 ];
 
 function collectText(body) {
@@ -18,24 +76,44 @@ function collectText(body) {
     .slice(0, 6000);
 }
 
+function normalizeText(text) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9ñ\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasTerm(text, term) {
+  const normalizedTerm = normalizeText(term);
+  return new RegExp(`(^|\\s)${normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\s|$)`).test(text);
+}
+
+function hasAny(text, terms = []) {
+  return terms.some((term) => hasTerm(text, term));
+}
+
 function localRiskReason(text) {
-  return highRiskPatterns.some((pattern) => pattern.test(text))
-    ? "El contenido parece relacionado con actividades ilegales o peligrosas."
-    : "";
+  const normalizedText = normalizeText(text);
+
+  for (const rule of validationTree) {
+    if (rule.direct && hasAny(normalizedText, rule.direct)) {
+      return { ruleId: rule.id, reason: rule.reason };
+    }
+
+    if (rule.any && hasAny(normalizedText, rule.any) && rule.context && hasAny(normalizedText, rule.context)) {
+      return { ruleId: rule.id, reason: rule.reason };
+    }
+  }
+
+  return null;
 }
 
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.status(405).json({ allowed: false, message: "Método no permitido." });
-    return;
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    response.status(503).json({
-      allowed: false,
-      message: "La moderación automática no está configurada. Agrega OPENAI_API_KEY en Vercel.",
-    });
     return;
   }
 
@@ -45,12 +123,23 @@ export default async function handler(request, response) {
     return;
   }
 
-  const localReason = localRiskReason(text);
-  if (localReason) {
+  const localRisk = localRiskReason(text);
+  if (localRisk) {
     response.status(200).json({
       allowed: false,
       source: "local_rules",
-      message: `${localReason} Por seguridad, esta publicación no puede enviarse.`,
+      ruleId: localRisk.ruleId,
+      message: `${localRisk.reason} Por seguridad, esta publicación no puede enviarse.`,
+    });
+    return;
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    response.status(200).json({
+      allowed: true,
+      source: "local_rules_only",
+      warning: "OpenAI no está configurado. Se aplicaron reglas locales.",
     });
     return;
   }
@@ -75,9 +164,10 @@ export default async function handler(request, response) {
       const lowerMessage = `${code} ${message}`.toLowerCase();
 
       if (lowerMessage.includes("insufficient_quota") || lowerMessage.includes("quota") || lowerMessage.includes("billing")) {
-        response.status(402).json({
-          allowed: false,
-          message: "La moderación automática no tiene créditos activos en OpenAI. Agrega créditos o revisa el billing de OpenAI.",
+        response.status(200).json({
+          allowed: true,
+          source: "local_rules_only",
+          warning: "OpenAI no tiene créditos activos. Se aplicaron reglas locales.",
         });
         return;
       }
