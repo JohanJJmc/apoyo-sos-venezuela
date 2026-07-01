@@ -72,22 +72,27 @@ function PasswordField({
   placeholder,
   visible,
   onToggle,
+  autoComplete = "current-password",
+  name,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   visible: boolean;
   onToggle: () => void;
+  autoComplete?: string;
+  name?: string;
 }) {
   return (
     <label className="relative block">
       <input
+        name={name}
         value={value}
         onChange={(event) => onChange(sanitizePassword(event.target.value))}
         placeholder={placeholder}
         type={visible ? "text" : "password"}
         maxLength={12}
-        autoComplete="current-password"
+        autoComplete={autoComplete}
         className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 pr-14 text-[16px] font-semibold outline-none focus:border-sos-orange"
       />
       <button
@@ -189,10 +194,10 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         </p>
 
         <div className="mt-8 space-y-3">
-          <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <PasswordField value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />
-          <PasswordField value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} />
+          <input name="nexo_signup_full_name" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <input name="nexo_signup_email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <PasswordField name="nexo_signup_password" value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} autoComplete="new-password" />
+          <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />
         </div>
 
         <div className="mt-5">
@@ -271,8 +276,8 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
       )}
 
       <div className="mt-8 space-y-3">
-        <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-        <PasswordField value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />
+        <input name="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+        <PasswordField name="password" value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} autoComplete="current-password" />
       </div>
 
       <button type="button" className="mt-6 text-center text-[14px] font-extrabold text-sos-ink">
