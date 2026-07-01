@@ -4,6 +4,7 @@ import type { Coordinates, Request } from "../types/request";
 import { CategoryDropdown } from "./CategoryDropdown";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
+import { BackButton } from "./BackButton";
 
 const FALLBACK_LOCATION: Coordinates = { latitude: 10.5, longitude: -66.9167 };
 
@@ -33,6 +34,7 @@ interface RequestFormModalProps {
   onCancelManualLocation: () => void;
   pickingLocation: boolean;
   error?: string;
+  currentUserName?: string;
 }
 
 export function RequestFormModal({
@@ -47,10 +49,10 @@ export function RequestFormModal({
   onCancelManualLocation,
   pickingLocation,
   error,
+  currentUserName = "",
 }: RequestFormModalProps) {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [item, setItem] = useState(CATEGORY_ITEMS[CATEGORIES[0]][0]);
-  const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [photoError, setPhotoError] = useState("");
@@ -63,8 +65,7 @@ export function RequestFormModal({
 
   const hasPreciseLocation = Boolean(selectedLocation ?? currentLocation);
   const location = selectedLocation ?? currentLocation ?? FALLBACK_LOCATION;
-  const quantityNumber = Number(quantity);
-  const canSubmit = Boolean(category && item && quantityNumber > 0);
+  const canSubmit = Boolean(category && item);
 
   const locationText = useMemo(() => {
     if (!location) return "Ubicacion no disponible. Ajusta la ubicacion manualmente en el mapa.";
@@ -80,7 +81,6 @@ export function RequestFormModal({
     wasOpen.current = true;
     setCategory(CATEGORIES[0]);
     setItem(CATEGORY_ITEMS[CATEGORIES[0]][0]);
-    setQuantity("");
     setDescription("");
     setPhotoUrl(undefined);
     setPhotoError("");
@@ -132,12 +132,12 @@ export function RequestFormModal({
       await onSubmit({
         category,
         item,
-        quantity: quantityNumber,
+        quantity: 1,
         description: description.trim() || undefined,
         photoUrl,
         latitude: location.latitude,
         longitude: location.longitude,
-        requesterName: requesterAnonymous ? undefined : requesterName.trim() || undefined,
+        requesterName: requesterAnonymous ? undefined : currentUserName.trim() || requesterName.trim() || undefined,
         requesterPhone: requesterAnonymous ? undefined : requesterPhone.trim() || undefined,
         requesterAnonymous,
         address,
@@ -152,12 +152,7 @@ export function RequestFormModal({
       <section
         className={`h-full overflow-y-auto px-7 pb-7 pt-20 ${pickingLocation ? "hidden" : ""}`}
       >
-        <button type="button" onClick={onClose} className="absolute left-7 top-10 grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
-          ‹
-        </button>
-        <div className="mb-9 text-center">
-          <h2 className="text-[18px] font-extrabold text-sos-ink">Nueva solicitud</h2>
-        </div>
+        <BackButton onClick={onClose} label="Nueva solicitud" />
 
         <div className="space-y-5">
           <CategoryDropdown category={category} item={item} onCategoryChange={changeCategory} onItemChange={setItem} />
@@ -166,8 +161,8 @@ export function RequestFormModal({
             <p className="text-[14px] font-extrabold text-sos-muted">¿Quién Solicita?</p>
             <TextInput
               label=""
-              value={requesterName}
-              disabled={requesterAnonymous}
+              value={requesterAnonymous ? "" : currentUserName || requesterName}
+              disabled
               onChange={(event) => setRequesterName(event.target.value)}
               placeholder="Nombre y apellido"
             />
@@ -194,15 +189,6 @@ export function RequestFormModal({
               Anonimo
             </label>
           </section>
-
-          <TextInput
-            label="Cantidad necesaria"
-            type="number"
-            min={1}
-            value={quantity}
-            onChange={(event) => setQuantity(event.target.value)}
-            placeholder="Cantidad"
-          />
 
           <TextInput
             multiline

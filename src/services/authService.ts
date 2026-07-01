@@ -18,10 +18,11 @@ function getAuthRedirectUrl() {
   return import.meta.env.VITE_AUTH_REDIRECT_URL || window.location.origin;
 }
 
-function sessionFromSupabaseUser(user: { id: string; email?: string | null }): AppSession {
+function sessionFromSupabaseUser(user: { id: string; email?: string | null; user_metadata?: { full_name?: string } | null }): AppSession {
   return {
     userId: user.id,
     email: user.email ?? undefined,
+    name: user.user_metadata?.full_name ?? undefined,
   };
 }
 
@@ -67,7 +68,7 @@ export const authService = {
     return saveAndReturn(sessionFromSupabaseUser(data.user));
   },
 
-  async signUp(email: string, password: string) {
+  async signUp(email: string, password: string, fullName: string) {
     const cleanEmail = normalizeEmail(email);
 
     if (!supabase) {
@@ -83,7 +84,10 @@ export const authService = {
     const { error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
-      options: { emailRedirectTo: getAuthRedirectUrl() },
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: { full_name: fullName.trim() },
+      },
     });
     if (error) throw error;
   },

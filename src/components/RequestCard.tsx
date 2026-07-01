@@ -30,7 +30,6 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
           </div>
           <StatusBadge status={request.status} partialSupport={request.partialSupport} />
         </div>
-        <p className="mt-1 text-[15px] font-semibold text-sos-muted">Cantidad: {request.quantity}</p>
         <p className="mt-1 text-[16px] font-medium text-sos-ink">{request.address ?? "Av. Lorem ipsum,###, La guaira"}</p>
         {hasPendingSupport && request.status === "pending" && (
           <p className="mt-2 rounded-pill bg-sos-primarySoft px-3 py-2 text-[13px] font-extrabold text-sos-primary">

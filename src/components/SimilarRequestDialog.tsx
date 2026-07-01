@@ -18,7 +18,7 @@ export function SimilarRequestDialog({ request, onJoin, onCreateAnyway, onCancel
           Ya existe una solicitud similar cerca de esta ubicacion. ¿Quieres sumarte a esa solicitud?
         </h2>
         <p className="mt-3 rounded-input bg-sos-background p-3 text-[15px] font-semibold text-sos-ink">
-          {request.category}: {request.item} - cantidad {request.quantity}
+          {request.category}: {request.item}
         </p>
         <div className="mt-4 space-y-2">
           <button type="button" onClick={onJoin} className="sos-gradient min-h-12 w-full rounded-pill px-4 font-extrabold text-white">

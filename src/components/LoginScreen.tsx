@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createAnonymousSession, type AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
+import { BackButton } from "./BackButton";
 
 interface LoginScreenProps {
   onLogin: (session: AppSession) => void;
@@ -103,6 +104,7 @@ function PasswordField({
 
 export function LoginScreen({ onLogin, initialView = "login", securityNotice = false, onCancel }: LoginScreenProps) {
   const [view, setView] = useState<AuthView>(initialView);
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -121,8 +123,9 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }, [resendSeconds]);
 
   const cleanEmail = email.trim().toLowerCase();
+  const cleanFullName = fullName.trim();
   const canLogin = cleanEmail.length > 4 && password.length >= 6;
-  const canSignUp = canLogin && password === passwordConfirm && acceptedSafetyTerms;
+  const canSignUp = cleanFullName.length >= 3 && canLogin && password === passwordConfirm && acceptedSafetyTerms;
 
   async function submitLogin() {
     if (!canLogin) return;
@@ -139,13 +142,13 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   async function submitSignUp() {
     if (!canSignUp) {
-      setError("Confirma que el correo sea válido, que las contraseñas coincidan y acepta el aviso de seguridad.");
+      setError("Completa nombre y apellido, correo válido, contraseñas iguales y acepta el aviso de seguridad.");
       return;
     }
     setIsLoading(true);
     setError("");
     try {
-      await authService.signUp(cleanEmail, password);
+      await authService.signUp(cleanEmail, password, cleanFullName);
       setInfo(`Te enviamos un correo de confirmación a ${cleanEmail}.`);
       setResendSeconds(60);
       setView("verify");
@@ -180,15 +183,13 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   if (view === "signup") {
     return (
       <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
-        <button type="button" onClick={() => (onCancel ? onCancel() : goTo("login"))} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
-          ‹
-        </button>
-        <h1 className="mt-3 text-[20px] font-extrabold">Crear cuenta</h1>
+        <BackButton onClick={() => (onCancel ? onCancel() : goTo("login"))} label="Crear cuenta" />
         <p className="mt-10 text-[14px] font-semibold text-sos-ink">
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
         </p>
 
         <div className="mt-8 space-y-3">
+          <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <PasswordField value={password} onChange={setPassword} placeholder="Ingresa tu contraseña" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} />
           <PasswordField value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} />
@@ -223,8 +224,10 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     return (
       <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
         <div className="flex items-center gap-4">
-          <button type="button" onClick={() => goTo("signup")} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
-            ‹
+          <button type="button" onClick={() => goTo("signup")} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-sos-ink shadow-soft" aria-label="Volver">
+            <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           <h1 className="text-[22px] font-extrabold">Confirma tu cuenta</h1>
         </div>

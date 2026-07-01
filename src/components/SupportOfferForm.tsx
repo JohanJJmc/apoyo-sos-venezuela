@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import type { Coordinates, SupportReport } from "../types/request";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
+import { BackButton } from "./BackButton";
 
 interface SupportOfferFormProps {
   isOpen: boolean;
   currentLocation?: Coordinates;
+  currentUserName?: string;
   onClose: () => void;
   onSubmit: (input: Partial<SupportReport>) => void;
 }
 
-export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }: SupportOfferFormProps) {
+export function SupportOfferForm({ isOpen, currentLocation, currentUserName = "", onClose, onSubmit }: SupportOfferFormProps) {
   const [supporterName, setSupporterName] = useState("");
   const [supporterPhone, setSupporterPhone] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -59,21 +61,15 @@ export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }:
   return (
     <div className="absolute inset-0 z-[1100] bg-white">
       <section className="h-full overflow-y-auto px-7 pb-7 pt-20">
-        <button type="button" onClick={onClose} className="absolute left-7 top-10 grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-2xl">
-          ‹
-        </button>
-
-        <div className="mb-9 text-center">
-          <h2 className="text-[18px] font-extrabold text-sos-ink">Ofreciendo apoyo</h2>
-        </div>
+        <BackButton onClick={onClose} label="Ofreciendo apoyo" />
 
         <div className="space-y-5">
           <section className="space-y-3">
             <p className="text-[14px] font-extrabold text-sos-muted">¿Quién apoya?</p>
             <TextInput
               label=""
-              value={supporterName}
-              disabled={anonymous}
+              value={anonymous ? "" : currentUserName || supporterName}
+              disabled
               onChange={(event) => setSupporterName(event.target.value)}
               placeholder="Nombre y apellido"
             />
@@ -122,7 +118,7 @@ export function SupportOfferForm({ isOpen, currentLocation, onClose, onSubmit }:
             type="button"
             onClick={() =>
               onSubmit({
-                supporterName: anonymous ? undefined : supporterName.trim() || undefined,
+                supporterName: anonymous ? undefined : currentUserName.trim() || supporterName.trim() || undefined,
                 supporterPhone: anonymous ? undefined : supporterPhone.trim() || undefined,
                 anonymous,
                 details,

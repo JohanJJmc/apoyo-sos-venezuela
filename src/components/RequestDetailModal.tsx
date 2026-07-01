@@ -2,6 +2,7 @@ import type { Request, SupportReport } from "../types/request";
 import { timeAgo } from "../utils/time";
 import { CategoryIcon } from "./CategoryIcon";
 import { StatusBadge } from "./StatusBadge";
+import { BackButton } from "./BackButton";
 
 interface RequestDetailModalProps {
   request: Request | null;
@@ -29,12 +30,10 @@ export function RequestDetailModal({
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
-      <section className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-24">
-        <button type="button" onClick={onClose} className="absolute left-8 top-24 grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-3xl">
-          ‹
-        </button>
+      <section className="flex h-full flex-col overflow-y-auto px-7 pb-6 pt-20">
+        <BackButton onClick={onClose} label="Detalle solicitud" />
 
-        <div className="mt-14 flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="inline-flex items-center gap-2 text-[18px] font-bold text-[#C25700]">
               <CategoryIcon category={request.category} className="h-4 w-4 text-[#0054C8]" />

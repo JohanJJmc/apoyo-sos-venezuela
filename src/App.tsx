@@ -295,6 +295,7 @@ function App() {
     [requests, selectedRequest],
   );
   const contentTopClass = isOffline ? "top-48" : "top-44";
+  const currentUserName = session?.name || session?.email?.split("@")[0] || "";
 
   function openForm() {
     setFormError("");
@@ -627,6 +628,7 @@ function App() {
         onCancelManualLocation={cancelManualLocation}
         pickingLocation={pickingLocation}
         error={formError}
+        currentUserName={currentUserName}
       />
 
       {pickingLocation && (
@@ -675,6 +677,7 @@ function App() {
       <SupportOfferForm
         isOpen={Boolean(supportRequestId)}
         currentLocation={userLocation ?? manualLocation}
+        currentUserName={currentUserName}
         onClose={() => setSupportRequestId(null)}
         onSubmit={submitSupportOffer}
       />
