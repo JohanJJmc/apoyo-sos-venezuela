@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { uploadPhoto, validatePhotoFile } from "../services/photoStorageService";
 import type { Coordinates, SupportReport } from "../types/request";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
@@ -19,7 +20,9 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
   const [anonymous, setAnonymous] = useState(false);
   const [details, setDetails] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [photoFile, setPhotoFile] = useState<File | undefined>();
   const [photoError, setPhotoError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,7 +31,9 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
     setAnonymous(false);
     setDetails("");
     setPhotoUrl(undefined);
+    setPhotoFile(undefined);
     setPhotoError("");
+    setIsSubmitting(false);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -37,19 +42,45 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
     setPhotoError("");
     if (!file) {
       setPhotoUrl(undefined);
+      setPhotoFile(undefined);
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setPhotoError("La foto no se pudo usar. Puedes continuar sin foto.");
+    try {
+      validatePhotoFile(file);
+    } catch (nextError) {
+      setPhotoError(nextError instanceof Error ? nextError.message : "La foto no se pudo usar. Puedes continuar sin foto.");
       setPhotoUrl(undefined);
+      setPhotoFile(undefined);
       return;
     }
 
+    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => setPhotoUrl(String(reader.result));
     reader.onerror = () => setPhotoError("La foto no se pudo cargar. Puedes continuar sin foto.");
     reader.readAsDataURL(file);
+  }
+
+  async function submitSupport() {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setPhotoError("");
+    try {
+      const uploadedPhotoUrl = photoFile ? await uploadPhoto(photoFile, "support") : photoUrl;
+      onSubmit({
+        supporterName: anonymous ? undefined : currentUserName.trim() || supporterName.trim() || undefined,
+        supporterPhone: anonymous ? undefined : currentUserPhone.trim() || supporterPhone.trim() || undefined,
+        anonymous,
+        details,
+        photoUrl: uploadedPhotoUrl,
+        latitude: currentLocation?.latitude,
+        longitude: currentLocation?.longitude,
+      });
+    } catch (nextError) {
+      setPhotoError(nextError instanceof Error ? nextError.message : "La foto no se pudo subir. Intenta de nuevo sin foto.");
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -104,20 +135,11 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
 
           <button
             type="button"
-            onClick={() =>
-              onSubmit({
-                supporterName: anonymous ? undefined : currentUserName.trim() || supporterName.trim() || undefined,
-                supporterPhone: anonymous ? undefined : currentUserPhone.trim() || supporterPhone.trim() || undefined,
-                anonymous,
-                details,
-                photoUrl,
-                latitude: currentLocation?.latitude,
-                longitude: currentLocation?.longitude,
-              })
-            }
-            className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft"
+            onClick={submitSupport}
+            disabled={isSubmitting}
+            className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
           >
-            Completar solicitud
+            {isSubmitting ? "Enviando..." : "Completar solicitud"}
           </button>
         </div>
       </section>

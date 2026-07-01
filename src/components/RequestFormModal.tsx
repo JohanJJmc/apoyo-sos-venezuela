@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORY_ITEMS, CATEGORIES } from "../data/categories";
+import { uploadPhoto, validatePhotoFile } from "../services/photoStorageService";
 import type { Coordinates, Request } from "../types/request";
 import { CategoryDropdown } from "./CategoryDropdown";
 import { PhotoUploader } from "./PhotoUploader";
@@ -57,6 +58,7 @@ export function RequestFormModal({
   const [item, setItem] = useState(CATEGORY_ITEMS[CATEGORIES[0]][0]);
   const [description, setDescription] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [photoFile, setPhotoFile] = useState<File | undefined>();
   const [photoError, setPhotoError] = useState("");
   const [requesterName, setRequesterName] = useState("");
   const [requesterPhone, setRequesterPhone] = useState("");
@@ -85,6 +87,7 @@ export function RequestFormModal({
     setItem(CATEGORY_ITEMS[CATEGORIES[0]][0]);
     setDescription("");
     setPhotoUrl(undefined);
+    setPhotoFile(undefined);
     setPhotoError("");
     setRequesterName("");
     setRequesterPhone("");
@@ -109,15 +112,20 @@ export function RequestFormModal({
     setPhotoError("");
     if (!file) {
       setPhotoUrl(undefined);
+      setPhotoFile(undefined);
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setPhotoError("La foto no se pudo usar. Puedes publicar sin foto.");
+    try {
+      validatePhotoFile(file);
+    } catch (nextError) {
+      setPhotoError(nextError instanceof Error ? nextError.message : "La foto no se pudo usar. Puedes publicar sin foto.");
       setPhotoUrl(undefined);
+      setPhotoFile(undefined);
       return;
     }
 
+    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => setPhotoUrl(String(reader.result));
     reader.onerror = () => {
@@ -131,12 +139,16 @@ export function RequestFormModal({
     if (!canSubmit || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      let uploadedPhotoUrl = photoUrl;
+      if (photoFile) {
+        uploadedPhotoUrl = await uploadPhoto(photoFile, "requests");
+      }
       await onSubmit({
         category,
         item,
         quantity: 1,
         description: description.trim() || undefined,
-        photoUrl,
+        photoUrl: uploadedPhotoUrl,
         latitude: location.latitude,
         longitude: location.longitude,
         requesterName: requesterAnonymous ? undefined : currentUserName.trim() || requesterName.trim() || undefined,
