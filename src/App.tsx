@@ -210,8 +210,8 @@ function App() {
     try {
       await requestService.createRequest(draft);
       await finishCreateFlow();
-    } catch {
-      setFormError("No se pudo publicar la solicitud. Intenta de nuevo.");
+    } catch (nextError) {
+      setFormError(nextError instanceof Error ? nextError.message : "No se pudo publicar la solicitud. Intenta de nuevo.");
     }
   }
 
