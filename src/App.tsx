@@ -13,6 +13,7 @@ import { RequestDetailBottomSheet } from "./components/RequestDetailBottomSheet"
 import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBottomSheet";
 import { RequiredPhoneScreen } from "./components/RequiredPhoneScreen";
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
+import { SplashScreen } from "./components/SplashScreen";
 import { SupportOfferForm } from "./components/SupportOfferForm";
 import { ToastMessage } from "./components/ToastMessage";
 import { clearSession, getStoredSession, saveSession, type AppSession } from "./services/authSession";
@@ -65,8 +66,11 @@ type ToastState = {
   tone: "info" | "success" | "danger";
 };
 
+const SPLASH_MIN_DURATION_MS = 1700;
+
 function App() {
   const [session, setSession] = useState<AppSession | null>(() => getStoredSession());
+  const [isSplashVisible, setIsSplashVisible] = useState(() => Boolean(getStoredSession()));
   const [requests, setRequests] = useState<Request[]>([]);
   const [filters, setFilters] = useState<Filters>({ showPending: true, showResolved: false, category: "Todas" });
   const [activeView, setActiveView] = useState<AppView>("map");
@@ -105,7 +109,28 @@ function App() {
   const mapGeocodeRequest = useRef(0);
   const mapGeocodeTimer = useRef<number | null>(null);
   const realtimeRefreshTimer = useRef<number | null>(null);
+  const splashTimer = useRef<number | null>(null);
   const toastTimer = useRef<number | null>(null);
+
+  const showSplash = useCallback(() => {
+    setIsSplashVisible(true);
+    if (splashTimer.current) window.clearTimeout(splashTimer.current);
+    splashTimer.current = window.setTimeout(() => {
+      setIsSplashVisible(false);
+      splashTimer.current = null;
+    }, SPLASH_MIN_DURATION_MS);
+  }, []);
+
+  useEffect(() => {
+    if (!isSplashVisible) return;
+    showSplash();
+  }, [isSplashVisible, showSplash]);
+
+  useEffect(() => {
+    return () => {
+      if (splashTimer.current) window.clearTimeout(splashTimer.current);
+    };
+  }, []);
 
   const reloadRequests = useCallback(async () => {
     try {
@@ -228,6 +253,7 @@ function App() {
     void authService.getSupabaseSession().then((nextSession) => {
       if (!isMounted) return;
       if (nextSession) {
+        if (!getStoredSession()) showSplash();
         setSession(nextSession);
         return;
       }
@@ -240,7 +266,7 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [showSplash]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -255,6 +281,7 @@ function App() {
           name: nextSession.user.user_metadata?.full_name ?? undefined,
           phone: nextSession.user.user_metadata?.phone ?? undefined,
         };
+        if (event === "SIGNED_IN" || event === "PASSWORD_RECOVERY") showSplash();
         saveSession(nextAppSession);
         setSession(nextAppSession);
       }
@@ -263,7 +290,7 @@ function App() {
     return () => {
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [showSplash]);
 
   useEffect(() => {
     function updateOnlineStatus() {
@@ -696,6 +723,7 @@ function App() {
   }
 
   function handleLogin(nextSession: AppSession) {
+    showSplash();
     saveSession(nextSession);
     setSession(nextSession);
     setAuthRequiredForRequest(false);
@@ -749,6 +777,10 @@ function App() {
 
   if (!session) {
     return <LoginScreen onLogin={handleLogin} onNotify={showToast} />;
+  }
+
+  if (isSplashVisible) {
+    return <SplashScreen />;
   }
 
   if (authRequiredForRequest) {
