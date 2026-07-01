@@ -5,6 +5,13 @@ type ModerationResponse = {
   message?: string;
 };
 
+export class ModerationBlockedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ModerationBlockedError";
+  }
+}
+
 export async function validateSafeContent(kind: "request" | "support", fields: ModerationFields) {
   const response = await fetch("/api/moderate-request", {
     method: "POST",
@@ -15,9 +22,11 @@ export async function validateSafeContent(kind: "request" | "support", fields: M
   const result = (await response.json().catch(() => ({}))) as ModerationResponse;
 
   if (!response.ok || !result.allowed) {
-    throw new Error(
+    const message =
       result.message ||
-        "No se pudo validar la seguridad del contenido. Intenta nuevamente.",
-    );
+      "No se pudo validar la seguridad del contenido. Intenta nuevamente.";
+
+    if (response.ok) throw new ModerationBlockedError(message);
+    throw new Error(message);
   }
 }

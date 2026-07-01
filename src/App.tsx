@@ -12,12 +12,14 @@ import { RequestDetailBottomSheet } from "./components/RequestDetailBottomSheet"
 import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBottomSheet";
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SupportOfferForm } from "./components/SupportOfferForm";
+import { ToastMessage } from "./components/ToastMessage";
 import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
 import { authService } from "./services/authService";
 import { reverseGeocodeAddress } from "./services/geocodeService";
-import { validateSafeContent } from "./services/moderationService";
+import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
 import { requestQueue } from "./services/requestQueue";
 import { requestService } from "./services/requestService";
+import { SAFETY_BLOCK_THRESHOLD, safetyService } from "./services/safetyService";
 import { supabase } from "./services/supabaseClient";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
@@ -64,6 +66,7 @@ function App() {
   const [recenterSignal, setRecenterSignal] = useState(0);
   const [formError, setFormError] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
@@ -298,10 +301,33 @@ function App() {
   const contentTopClass = isOffline ? "top-48" : "top-44";
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
 
-  function openForm() {
+  function showToast(message: string) {
+    setToastMessage(message);
+    window.setTimeout(() => setToastMessage(""), 6000);
+  }
+
+  async function handleModerationBlocked(error: unknown) {
+    const reason = getErrorMessage(error, "Se detectó texto indebido o riesgoso.");
+    const status = await safetyService.recordViolation(reason);
+    const remaining = Math.max(SAFETY_BLOCK_THRESHOLD - status.violationCount, 0);
+
+    if (status.blocked) {
+      showToast("Cuenta bloqueada por múltiples intentos de publicar contenido indebido o sospechoso.");
+      return "Cuenta bloqueada por seguridad. Contacta al equipo de NEXO si crees que fue un error.";
+    }
+
+    showToast(`Texto indebido detectado. Intento ${status.violationCount}/${SAFETY_BLOCK_THRESHOLD}. Te quedan ${remaining} antes del bloqueo.`);
+    return reason;
+  }
+
+  async function openForm() {
     setFormError("");
     setSimilarRequest(null);
     setPendingDraft(null);
+    if (await safetyService.isBlocked()) {
+      showToast("Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.");
+      return;
+    }
     if (session?.isAnonymous) {
       setAuthRequiredForRequest(true);
       return;
@@ -312,6 +338,13 @@ function App() {
 
   async function submitDraft(draft: RequestDraft) {
     setFormError("");
+    if (await safetyService.isBlocked()) {
+      const blockedMessage = "Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.";
+      setFormError(blockedMessage);
+      showToast(blockedMessage);
+      return;
+    }
+
     try {
       await validateSafeContent("request", {
         category: draft.category,
@@ -321,7 +354,11 @@ function App() {
         requesterName: draft.requesterName,
       });
     } catch (nextError) {
-      setFormError(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+      if (nextError instanceof ModerationBlockedError) {
+        setFormError(await handleModerationBlocked(nextError));
+      } else {
+        setFormError(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+      }
       return;
     }
 
@@ -388,12 +425,23 @@ function App() {
   }
 
   function offerSupport(requestId: string) {
-    setSupportRequestId(requestId);
-    setSelectedRequest(null);
+    void safetyService.isBlocked().then((blocked) => {
+      if (blocked) {
+        showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.");
+        return;
+      }
+      setSupportRequestId(requestId);
+      setSelectedRequest(null);
+    });
   }
 
   async function submitSupportOffer(input: Partial<SupportReport>) {
     if (!supportRequestId) return;
+    if (await safetyService.isBlocked()) {
+      showToast("Esta cuenta está bloqueada por seguridad y no puede ofrecer apoyo.");
+      return;
+    }
+
     try {
       await validateSafeContent("support", {
         supporterName: input.supporterName,
@@ -403,7 +451,11 @@ function App() {
       setSupportRequestId(null);
       await reloadRequests();
     } catch (nextError) {
-      window.alert(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+      if (nextError instanceof ModerationBlockedError) {
+        showToast(await handleModerationBlocked(nextError));
+      } else {
+        showToast(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+      }
     }
   }
 
@@ -527,6 +579,12 @@ function App() {
       {syncMessage && (
         <div className="fixed left-4 right-4 top-32 z-[1300] rounded-input bg-sos-primarySoft px-4 py-3 text-center text-[13px] font-extrabold text-sos-primary shadow-soft">
           {syncMessage}
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed left-4 right-4 top-48 z-[1400]">
+          <ToastMessage message={toastMessage} tone="danger" />
         </div>
       )}
 
