@@ -15,7 +15,7 @@ import { RequiredPhoneScreen } from "./components/RequiredPhoneScreen";
 import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SupportOfferForm } from "./components/SupportOfferForm";
 import { ToastMessage } from "./components/ToastMessage";
-import { getStoredSession, saveSession, type AppSession } from "./services/authSession";
+import { clearSession, getStoredSession, saveSession, type AppSession } from "./services/authSession";
 import { authService } from "./services/authService";
 import { reverseGeocodeAddress } from "./services/geocodeService";
 import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
@@ -197,9 +197,16 @@ function App() {
   }, [reloadRequests, session]);
 
   useEffect(() => {
-    if (session) return;
     void authService.getSupabaseSession().then((nextSession) => {
-      if (nextSession) setSession(nextSession);
+      if (nextSession) {
+        setSession(nextSession);
+        return;
+      }
+
+      if (session && !session.isAnonymous && supabase) {
+        clearSession();
+        setSession(null);
+      }
     });
   }, [session]);
 

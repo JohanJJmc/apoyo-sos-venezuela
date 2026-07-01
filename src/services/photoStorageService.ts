@@ -29,6 +29,11 @@ export async function uploadPhoto(file?: File, folder = "requests") {
     return URL.createObjectURL(file);
   }
 
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error("Tu sesión expiró. Cierra sesión e ingresa nuevamente para subir fotos.");
+  }
+
   const userId = getCurrentUserId().replace(/[^a-zA-Z0-9_-]/g, "-");
   const filePath = `${folder}/${userId}/${crypto.randomUUID()}.${extensionFor(file)}`;
   const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(filePath, file, {
