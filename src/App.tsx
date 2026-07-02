@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountScreen } from "./components/AccountScreen";
+import { AccountDeletedDialog } from "./components/AccountDeletedDialog";
 import { AppHeader } from "./components/AppHeader";
 import { AppLayout } from "./components/AppLayout";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import { DeleteAccountPasswordDialog } from "./components/DeleteAccountPasswordDialog";
 import { EmptyState } from "./components/EmptyState";
 import { FilterChips } from "./components/FilterChips";
 import { FloatingActionButton } from "./components/FloatingActionButton";
@@ -120,6 +122,10 @@ function App() {
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
   const [destructiveDialog, setDestructiveDialog] = useState<DestructiveDialogState>(null);
   const [isDestructiveActionRunning, setIsDestructiveActionRunning] = useState(false);
+  const [isDeletePasswordOpen, setIsDeletePasswordOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletePasswordError, setDeletePasswordError] = useState("");
+  const [isAccountDeletedOpen, setIsAccountDeletedOpen] = useState(false);
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
   const mapGeocodeTimer = useRef<number | null>(null);
@@ -806,16 +812,41 @@ function App() {
       if (session.isAnonymous) {
         await requestService.deleteCurrentUserData();
         await authService.signOut();
+        setSession(null);
+        setRequests([]);
+        setSelectedRequest(null);
+        setIsFormOpen(false);
+        setSupportRequestId(null);
+        setIsAccountDeletedOpen(true);
       } else {
-        await authService.deleteCurrentUserAccount();
+        setDeletePassword("");
+        setDeletePasswordError("");
+        setIsDeletePasswordOpen(true);
       }
+    } catch (nextError) {
+      showToast(getErrorMessage(nextError, "No se pudo eliminar la cuenta."), "danger");
+    }
+  }
+
+  async function confirmDeleteAccountWithPassword() {
+    if (!session || isDestructiveActionRunning) return;
+    setIsDestructiveActionRunning(true);
+    setDeletePasswordError("");
+    try {
+      await authService.deleteCurrentUserAccount(deletePassword);
       setSession(null);
       setRequests([]);
       setSelectedRequest(null);
       setIsFormOpen(false);
       setSupportRequestId(null);
+      setIsAccountOpen(false);
+      setIsDeletePasswordOpen(false);
+      setDeletePassword("");
+      setIsAccountDeletedOpen(true);
     } catch (nextError) {
-      showToast(getErrorMessage(nextError, "No se pudo eliminar la cuenta."), "danger");
+      setDeletePasswordError(getErrorMessage(nextError, "No se pudo eliminar la cuenta."));
+    } finally {
+      setIsDestructiveActionRunning(false);
     }
   }
 
@@ -845,6 +876,15 @@ function App() {
         initialView="resetPassword"
         onNotify={showToast}
       />
+    );
+  }
+
+  if (!session && isAccountDeletedOpen) {
+    return (
+      <>
+        <LoginScreen onLogin={handleLogin} onNotify={showToast} />
+        <AccountDeletedDialog isOpen onClose={() => setIsAccountDeletedOpen(false)} />
+      </>
     );
   }
 
@@ -947,6 +987,24 @@ function App() {
           if (!isDestructiveActionRunning) setDestructiveDialog(null);
         }}
         onConfirm={confirmDestructiveAction}
+      />
+
+      <DeleteAccountPasswordDialog
+        isOpen={isDeletePasswordOpen}
+        password={deletePassword}
+        error={deletePasswordError}
+        isLoading={isDestructiveActionRunning}
+        onPasswordChange={(value) => {
+          setDeletePassword(value);
+          setDeletePasswordError("");
+        }}
+        onCancel={() => {
+          if (isDestructiveActionRunning) return;
+          setIsDeletePasswordOpen(false);
+          setDeletePassword("");
+          setDeletePasswordError("");
+        }}
+        onContinue={confirmDeleteAccountWithPassword}
       />
 
       {activeView === "map" && (

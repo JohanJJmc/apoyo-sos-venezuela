@@ -205,10 +205,20 @@ export const authService = {
     clearSession();
   },
 
-  async deleteCurrentUserAccount() {
+  async deleteCurrentUserAccount(password?: string) {
     if (!supabase) {
       clearSession();
       return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const email = sessionData.session?.user.email;
+    if (!email) throw new Error("Tu sesión expiró. Ingresa nuevamente.");
+    if (!password) throw new Error("Ingresa tu contraseña para eliminar la cuenta.");
+
+    const { error: passwordError } = await supabase.auth.signInWithPassword({ email, password });
+    if (passwordError) {
+      throw new Error("La contraseña no es correcta. Intenta nuevamente.");
     }
 
     const { error } = await supabase.rpc("delete_current_user_account");
