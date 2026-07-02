@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createAnonymousSession, type AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
+import { checkRateLimit } from "../services/rateLimitService";
 import { verifyTurnstileToken } from "../services/turnstileService";
 import { BackButton } from "./BackButton";
 import { TurnstileWidget } from "./TurnstileWidget";
@@ -176,6 +177,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     setError("");
     try {
       await verifyTurnstileToken(turnstileToken);
+      await checkRateLimit("signup");
       await authService.signUp(cleanSignupEmail, signupPassword, cleanFullName, cleanSignupPhone);
       setInfo(`Te enviamos un correo de confirmación a ${cleanSignupEmail}.`);
       setResendSeconds(60);

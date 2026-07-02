@@ -22,6 +22,7 @@ import { reverseGeocodeDetails } from "./services/geocodeService";
 import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
 import { requestQueue } from "./services/requestQueue";
 import { requestService } from "./services/requestService";
+import { checkRateLimit } from "./services/rateLimitService";
 import { SAFETY_BLOCK_THRESHOLD, safetyService } from "./services/safetyService";
 import { supabase } from "./services/supabaseClient";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
@@ -529,6 +530,7 @@ function App() {
     }
 
     try {
+      await checkRateLimit("create_request");
       await validateSafeContent("request", {
         category: draft.category,
         item: draft.item,
@@ -641,6 +643,7 @@ function App() {
     }
 
     try {
+      await checkRateLimit("offer_support");
       await validateSafeContent("support", {
         supporterName: input.supporterName,
         details: input.details,
