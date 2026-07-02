@@ -91,7 +91,7 @@ export const authService = {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
       options: {
@@ -100,6 +100,9 @@ export const authService = {
       },
     });
     if (error) throw error;
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      throw new Error("Este correo ya tiene una cuenta. Intenta iniciar sesión.");
+    }
   },
 
   async verifySignupCode(email: string, code: string) {

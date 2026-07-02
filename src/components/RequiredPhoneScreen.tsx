@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
+import { isValidFullName, isValidPhone, sanitizeName, sanitizePhone } from "../utils/validation";
 import { TextInput } from "./TextInput";
 
 interface RequiredPhoneScreenProps {
@@ -8,10 +9,6 @@ interface RequiredPhoneScreenProps {
   onComplete: (session: AppSession) => void;
   onSignOut: () => void;
   onNotify?: (message: string, tone?: "info" | "success" | "danger") => void;
-}
-
-function phoneIsValid(value: string) {
-  return value.replace(/\D/g, "").length >= 6;
 }
 
 export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }: RequiredPhoneScreenProps) {
@@ -22,11 +19,11 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
 
   async function saveProfile() {
     setError("");
-    if (name.trim().length < 3) {
-      setError("Ingresa tu nombre y apellido.");
+    if (!isValidFullName(name)) {
+      setError("Ingresa nombre y apellido usando solo letras.");
       return;
     }
-    if (!phoneIsValid(phone)) {
+    if (!isValidPhone(phone)) {
       setError("Ingresa un teléfono válido.");
       return;
     }
@@ -58,14 +55,14 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
         <TextInput
           label="Nombre y apellido"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => setName(sanitizeName(event.target.value))}
           placeholder="Nombre y apellido"
           autoComplete="name"
         />
         <TextInput
           label="Teléfono"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          onChange={(event) => setPhone(sanitizePhone(event.target.value))}
           placeholder="Ingresa tu teléfono"
           inputMode="tel"
           autoComplete="tel"

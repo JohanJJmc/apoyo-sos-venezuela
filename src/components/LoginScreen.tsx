@@ -3,6 +3,7 @@ import { createAnonymousSession, type AppSession } from "../services/authSession
 import { authService } from "../services/authService";
 import { checkRateLimit } from "../services/rateLimitService";
 import { verifyTurnstileToken } from "../services/turnstileService";
+import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, sanitizePhone, validatePassword } from "../utils/validation";
 import { BackButton } from "./BackButton";
 import { TurnstileWidget } from "./TurnstileWidget";
 
@@ -140,23 +141,21 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     return () => window.clearTimeout(timeout);
   }, [resendSeconds]);
 
-  const cleanLoginEmail = loginEmail.trim().toLowerCase();
-  const cleanSignupEmail = signupEmail.trim().toLowerCase();
-  const cleanResetEmail = resetEmail.trim().toLowerCase();
+  const cleanLoginEmail = normalizeEmail(loginEmail);
+  const cleanSignupEmail = normalizeEmail(signupEmail);
+  const cleanResetEmail = normalizeEmail(resetEmail);
   const confirmationEmail = cleanSignupEmail || cleanLoginEmail;
   const cleanFullName = fullName.trim();
   const cleanSignupPhone = signupPhone.trim();
-  const canLogin = cleanLoginEmail.length > 4 && loginPassword.length >= 6;
-  const canSignUp =
-    cleanFullName.length >= 3 &&
-    cleanSignupPhone.length >= 6 &&
-    cleanSignupEmail.length > 4 &&
-    signupPassword.length >= 6 &&
-    signupPassword === passwordConfirm &&
-    acceptedSafetyTerms;
-
   async function submitLogin() {
-    if (!canLogin) return;
+    if (!isValidEmail(cleanLoginEmail)) {
+      setError("Ingresa un correo válido.");
+      return;
+    }
+    if (loginPassword.length < 6) {
+      setError("Ingresa tu contraseña.");
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -169,8 +168,29 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }
 
   async function submitSignUp() {
-    if (!canSignUp) {
-      setError("Completa nombre, teléfono, correo válido, contraseñas iguales y acepta el aviso de seguridad.");
+    if (!isValidFullName(cleanFullName)) {
+      setError("Ingresa nombre y apellido usando solo letras.");
+      return;
+    }
+    if (!isValidPhone(cleanSignupPhone)) {
+      setError("Ingresa un teléfono válido con código de país o ciudad.");
+      return;
+    }
+    if (!isValidEmail(cleanSignupEmail)) {
+      setError("Ingresa un correo válido.");
+      return;
+    }
+    const passwordError = validatePassword(signupPassword);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+    if (signupPassword !== passwordConfirm) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (!acceptedSafetyTerms) {
+      setError("Debes aceptar el aviso de seguridad para crear la cuenta.");
       return;
     }
     setIsLoading(true);
@@ -205,8 +225,8 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }
 
   async function submitForgotPassword() {
-    if (cleanResetEmail.length < 5) {
-      setError("Ingresa tu correo para enviarte el enlace de recuperación.");
+    if (!isValidEmail(cleanResetEmail)) {
+      setError("Ingresa un correo válido para enviarte el enlace de recuperación.");
       return;
     }
 
@@ -224,8 +244,9 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }
 
   async function submitResetPassword() {
-    if (resetPassword.length < 6) {
-      setError("La nueva contraseña debe tener mínimo 6 caracteres.");
+    const passwordError = validatePassword(resetPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (resetPassword !== resetPasswordConfirm) {
@@ -263,9 +284,9 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         </p>
 
         <form className="mt-9 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
-          <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input name="nexo_register_phone" value={signupPhone} onChange={(event) => setSignupPhone(event.target.value)} placeholder="Teléfono" inputMode="tel" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(sanitizeName(event.target.value))} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <input name="nexo_register_phone" value={signupPhone} onChange={(event) => setSignupPhone(sanitizePhone(event.target.value))} placeholder="Teléfono" inputMode="tel" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(normalizeEmail(event.target.value))} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <PasswordField name="nexo_register_secret_one" value={signupPassword} onChange={setSignupPassword} placeholder="Ingresa tu contraseña" visible={showSignupPassword} onToggle={() => setShowSignupPassword((visible) => !visible)} autoComplete="new-password" />
           <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />
         </form>
@@ -291,7 +312,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         <div className="mb-5">
           <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
         </div>
-        <button type="button" disabled={!canSignUp || isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+        <button type="button" disabled={isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Crear cuenta
         </button>
         <button type="button" onClick={() => goTo("login")} className="mt-5 min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink">
@@ -313,7 +334,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           <input
             name="nexo_recovery_email"
             value={resetEmail}
-            onChange={(event) => setResetEmail(event.target.value)}
+            onChange={(event) => setResetEmail(normalizeEmail(event.target.value))}
             placeholder="Ingresa tu correo"
             inputMode="email"
             autoComplete="off"
@@ -425,7 +446,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
       )}
 
       <form className="mt-9 space-y-4" autoComplete="on" onSubmit={(event) => event.preventDefault()}>
-        <input name="email" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+        <input name="email" value={loginEmail} onChange={(event) => setLoginEmail(normalizeEmail(event.target.value))} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
         <PasswordField name="password" value={loginPassword} onChange={setLoginPassword} placeholder="Ingresa tu contraseña" visible={showLoginPassword} onToggle={() => setShowLoginPassword((visible) => !visible)} autoComplete="current-password" />
       </form>
 
@@ -436,7 +457,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
       {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
       <div className="min-h-8 flex-1" />
 
-      <button type="button" disabled={!canLogin || isLoading} onClick={submitLogin} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+      <button type="button" disabled={isLoading} onClick={submitLogin} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
         Iniciar sesión
       </button>
       <button type="button" onClick={() => goTo("signup")} className="mt-6 text-[14px] font-extrabold text-sos-ink">

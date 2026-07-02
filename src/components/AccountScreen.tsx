@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
+import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, sanitizePhone, validatePassword } from "../utils/validation";
 import { BackButton } from "./BackButton";
 import { TextInput } from "./TextInput";
 
@@ -34,6 +35,18 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
   async function saveProfile() {
     setError("");
     setProfileMessage("");
+    if (!isValidFullName(name)) {
+      setError("Ingresa nombre y apellido usando solo letras.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Ingresa un correo válido.");
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setError("Ingresa un teléfono válido.");
+      return;
+    }
     setIsSavingProfile(true);
 
     try {
@@ -61,8 +74,9 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
   async function savePassword() {
     setError("");
     setPasswordMessage("");
-    if (password.length < 6) {
-      setError("La contraseña debe tener mínimo 6 caracteres.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -87,9 +101,9 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
       <BackButton onClick={onBack} label="Mi cuenta" />
 
       <section className="mt-9 space-y-4">
-        <TextInput label="Nombre y apellido" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" />
-        <TextInput label="Correo" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="correo@ejemplo.com" inputMode="email" autoComplete="off" />
-        <TextInput label="Teléfono" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Teléfono" inputMode="tel" autoComplete="off" />
+        <TextInput label="Nombre y apellido" value={name} onChange={(event) => setName(sanitizeName(event.target.value))} placeholder="Nombre y apellido" autoComplete="off" />
+        <TextInput label="Correo" value={email} onChange={(event) => setEmail(normalizeEmail(event.target.value))} placeholder="correo@ejemplo.com" inputMode="email" autoComplete="off" />
+        <TextInput label="Teléfono" value={phone} onChange={(event) => setPhone(sanitizePhone(event.target.value))} placeholder="Teléfono" inputMode="tel" autoComplete="off" />
 
         {profileMessage && <p className="rounded-input bg-sos-primarySoft p-3 text-[13px] font-extrabold text-sos-primary">{profileMessage}</p>}
 
