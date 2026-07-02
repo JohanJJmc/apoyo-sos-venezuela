@@ -11,8 +11,8 @@ export function SimilarRequestDialog({ request, onJoin, onCreateAnyway, onCancel
   if (!request) return null;
 
   return (
-    <div className="absolute inset-0 z-[1100] grid place-items-center bg-sos-ink/40 px-4">
-      <section className="w-full max-w-sm rounded-card bg-white p-5 shadow-soft">
+    <div className="absolute inset-0 z-[1100] grid place-items-center bg-sos-ink/40 px-4" onClick={onCancel}>
+      <section className="w-full max-w-sm rounded-card bg-white p-5 shadow-soft" onClick={(event) => event.stopPropagation()}>
         <p className="text-[13px] font-extrabold text-sos-pending">Solicitud cercana</p>
         <h2 className="mt-2 text-[20px] font-extrabold leading-snug text-sos-ink">
           Ya existe una solicitud similar cerca de esta ubicacion. ¿Quieres sumarte a esa solicitud?

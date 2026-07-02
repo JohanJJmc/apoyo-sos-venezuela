@@ -112,6 +112,9 @@ function App() {
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
+  const mapFilterActionsRef = useRef<HTMLDivElement>(null);
+  const mapFilterPanelRef = useRef<HTMLDivElement>(null);
+  const listFilterRef = useRef<HTMLDivElement>(null);
   const [recenterSignal, setRecenterSignal] = useState(0);
   const [formError, setFormError] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
@@ -212,6 +215,29 @@ function App() {
       return { ...currentFilters, ...nextStatus };
     });
   }, [activeView]);
+
+  useEffect(() => {
+    if (!isFilterOpen && !isMapFilterOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+
+      if (
+        isMapFilterOpen &&
+        !mapFilterActionsRef.current?.contains(target) &&
+        !mapFilterPanelRef.current?.contains(target)
+      ) {
+        setIsMapFilterOpen(false);
+      }
+
+      if (isFilterOpen && !listFilterRef.current?.contains(target)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isFilterOpen, isMapFilterOpen]);
 
   useEffect(() => {
     if (!session) return;
@@ -1019,7 +1045,7 @@ function App() {
             onManualLocationPreview={previewManualLocation}
           />
           {!pickingLocation && (
-            <div className="fixed right-4 top-1/2 z-[910] flex -translate-y-1/2 flex-col gap-3">
+            <div ref={mapFilterActionsRef} className="fixed right-4 top-1/2 z-[910] flex -translate-y-1/2 flex-col gap-3">
               <button
                 type="button"
                 onClick={() => setIsMapFilterOpen((open) => !open)}
@@ -1046,7 +1072,7 @@ function App() {
             </div>
           )}
           {isMapFilterOpen && !pickingLocation && (
-            <div className="absolute left-4 right-20 top-4 z-[910]">
+            <div ref={mapFilterPanelRef} className="absolute left-4 right-20 top-4 z-[910]">
               <FilterChips filters={filters} onChange={setFilters} placement="static" />
             </div>
           )}
@@ -1066,37 +1092,39 @@ function App() {
       {activeView !== "map" && (
         <section className={`absolute inset-x-0 bottom-0 ${contentTopClass} flex flex-col bg-sos-background`}>
           <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
-            <div className="mb-5 flex items-center gap-3">
-              <label className="flex min-h-14 flex-1 items-center gap-3 rounded-input border border-sos-border bg-white px-4">
-                <span className="text-3xl leading-none">⌕</span>
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  onFocus={() => setIsFilterOpen(true)}
-                  placeholder="Dirección, nombre, categoría o insumo"
-                  className="min-w-0 flex-1 bg-transparent text-[16px] outline-none"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen((open) => !open)}
-                className={`grid h-12 w-12 place-items-center rounded-pill border text-2xl ${
-                  isFilterOpen ? "border-sos-orange bg-sos-orange text-white" : "border-transparent text-sos-muted"
-                }`}
-                aria-label="Filtros"
-                aria-expanded={isFilterOpen}
-              >
-                <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-
-            {isFilterOpen && (
-              <div className="mb-5">
-                <FilterChips filters={filters} onChange={setFilters} placement="static" />
+            <div ref={listFilterRef}>
+              <div className="mb-5 flex items-center gap-3">
+                <label className="flex min-h-14 flex-1 items-center gap-3 rounded-input border border-sos-border bg-white px-4">
+                  <span className="text-3xl leading-none">⌕</span>
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    onFocus={() => setIsFilterOpen(true)}
+                    placeholder="Dirección, nombre, categoría o insumo"
+                    className="min-w-0 flex-1 bg-transparent text-[16px] outline-none"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsFilterOpen((open) => !open)}
+                  className={`grid h-12 w-12 place-items-center rounded-pill border text-2xl ${
+                    isFilterOpen ? "border-sos-orange bg-sos-orange text-white" : "border-transparent text-sos-muted"
+                  }`}
+                  aria-label="Filtros"
+                  aria-expanded={isFilterOpen}
+                >
+                  <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </button>
               </div>
-            )}
+
+              {isFilterOpen && (
+                <div className="mb-5">
+                  <FilterChips filters={filters} onChange={setFilters} placement="static" />
+                </div>
+              )}
+            </div>
 
             <div className="space-y-3">
               {(activeView === "requests" ? visibleRequests : visibleMyRequests).length === 0 ? (

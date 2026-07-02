@@ -7,11 +7,12 @@ export function AccountDeletedDialog({ isOpen, onClose }: AccountDeletedDialogPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/70 px-5">
+    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/70 px-5" onClick={onClose}>
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="account-deleted-title"
+        onClick={(event) => event.stopPropagation()}
         className="flex min-h-[424px] w-full max-w-[334px] flex-col items-center rounded-[28px] bg-white px-6 pb-7 pt-10 text-center shadow-modal"
       >
         <img src="/assets/functional-done.svg" alt="" className="h-16 w-16" />

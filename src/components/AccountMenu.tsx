@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppSession } from "../services/authSession";
 
 interface AccountMenuProps {
@@ -10,10 +10,24 @@ interface AccountMenuProps {
 
 export function AccountMenu({ session, onOpenAccount, onSignOut, onDeleteAccountData }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const label = session.isAnonymous ? "Anónimo" : session.email ?? "Cuenta";
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isOpen]);
+
   return (
-    <div className="relative flex items-center gap-3">
+    <div ref={menuRef} className="relative flex items-center gap-3">
       <span className="max-w-[150px] truncate text-[13px] font-bold text-sos-ink">{label}</span>
       <button
         type="button"
@@ -30,16 +44,33 @@ export function AccountMenu({ session, onOpenAccount, onSignOut, onDeleteAccount
           <p className="mb-3 truncate text-[13px] font-extrabold text-sos-muted">{label}</p>
           <button
             type="button"
-            onClick={onOpenAccount}
+            onClick={() => {
+              setIsOpen(false);
+              onOpenAccount();
+            }}
             disabled={session.isAnonymous}
             className="min-h-11 w-full rounded-input px-3 text-left text-[15px] font-extrabold text-sos-ink hover:bg-sos-background disabled:opacity-40"
           >
             Mi cuenta
           </button>
-          <button type="button" onClick={onSignOut} className="min-h-11 w-full rounded-input px-3 text-left text-[15px] font-extrabold text-sos-ink hover:bg-sos-background">
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onSignOut();
+            }}
+            className="min-h-11 w-full rounded-input px-3 text-left text-[15px] font-extrabold text-sos-ink hover:bg-sos-background"
+          >
             Cerrar sesión
           </button>
-          <button type="button" onClick={onDeleteAccountData} className="mt-2 min-h-11 w-full rounded-input bg-sos-pendingSoft px-3 text-left text-[15px] font-extrabold text-sos-pending">
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onDeleteAccountData();
+            }}
+            className="mt-2 min-h-11 w-full rounded-input bg-sos-pendingSoft px-3 text-left text-[15px] font-extrabold text-sos-pending"
+          >
             Eliminar cuenta y borrar datos
           </button>
         </div>
