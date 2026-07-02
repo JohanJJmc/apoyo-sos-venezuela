@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { createRequestClusterMarker, createRequestMarker } from "./RequestMarker";
 import type { Coordinates, Request } from "../types/request";
@@ -15,6 +15,18 @@ interface MapScreenProps {
 
 const DEFAULT_CENTER: Coordinates = { latitude: 10.5, longitude: -66.9167 };
 const CLUSTER_RADIUS_PX = 58;
+const MAP_LAYERS = {
+  standard: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: "&copy; OpenStreetMap",
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri",
+  },
+} as const;
+
+type MapLayerStyle = keyof typeof MAP_LAYERS;
 
 type RequestCluster = {
   requests: Request[];
@@ -64,8 +76,10 @@ export function MapScreen({
 }: MapScreenProps) {
   const mapElement = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
+  const tileLayer = useRef<L.TileLayer | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
   const didCenterOnUser = useRef(false);
+  const [mapLayerStyle, setMapLayerStyle] = useState<MapLayerStyle>("standard");
   const center = useMemo(() => userLocation ?? DEFAULT_CENTER, [userLocation]);
 
   useEffect(() => {
@@ -73,11 +87,22 @@ export function MapScreen({
 
     map.current = L.map(mapElement.current, { zoomControl: false }).setView([center.latitude, center.longitude], 14);
     L.control.zoom({ position: "bottomright" }).addTo(map.current);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap",
+    tileLayer.current = L.tileLayer(MAP_LAYERS.standard.url, {
+      attribution: MAP_LAYERS.standard.attribution,
     }).addTo(map.current);
     markers.current = L.layerGroup().addTo(map.current);
   }, [center.latitude, center.longitude]);
+
+  useEffect(() => {
+    if (!map.current) return;
+
+    tileLayer.current?.removeFrom(map.current);
+    const layer = MAP_LAYERS[mapLayerStyle];
+    tileLayer.current = L.tileLayer(layer.url, {
+      attribution: layer.attribution,
+      maxZoom: 19,
+    }).addTo(map.current);
+  }, [mapLayerStyle]);
 
   useEffect(() => {
     if (!map.current || !userLocation || didCenterOnUser.current) return;
@@ -168,6 +193,28 @@ export function MapScreen({
   return (
     <div className="relative h-full w-full">
       <div ref={mapElement} className="h-full w-full" aria-label="Mapa de solicitudes de apoyo" />
+      <div className="absolute left-4 bottom-[172px] z-[650] flex rounded-pill border border-sos-border bg-white p-1 shadow-soft">
+        <button
+          type="button"
+          onClick={() => setMapLayerStyle("standard")}
+          className={`min-h-9 rounded-pill px-4 text-[13px] font-extrabold ${
+            mapLayerStyle === "standard" ? "bg-sos-orange text-white" : "text-sos-ink"
+          }`}
+          aria-pressed={mapLayerStyle === "standard"}
+        >
+          Mapa
+        </button>
+        <button
+          type="button"
+          onClick={() => setMapLayerStyle("satellite")}
+          className={`min-h-9 rounded-pill px-4 text-[13px] font-extrabold ${
+            mapLayerStyle === "satellite" ? "bg-sos-orange text-white" : "text-sos-ink"
+          }`}
+          aria-pressed={mapLayerStyle === "satellite"}
+        >
+          Satélite
+        </button>
+      </div>
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] h-9 w-9 -translate-x-1/2 -translate-y-1/2">
         <span className="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 bg-sos-pending" />
         <span className="absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2 bg-sos-pending" />
