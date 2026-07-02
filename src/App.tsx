@@ -10,7 +10,7 @@ import { FilterChips } from "./components/FilterChips";
 import { FloatingActionButton } from "./components/FloatingActionButton";
 import { HomeActionPanel } from "./components/HomeActionPanel";
 import { LoginScreen } from "./components/LoginScreen";
-import { MapScreen } from "./components/MapScreen";
+import { MapScreen, type MapLayerStyle } from "./components/MapScreen";
 import { RequestCard } from "./components/RequestCard";
 import { RequestDetailBottomSheet } from "./components/RequestDetailBottomSheet";
 import { RequestDraft, RequestFormBottomSheet } from "./components/RequestFormBottomSheet";
@@ -112,6 +112,8 @@ function App() {
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
+  const [isMapLayerMenuOpen, setIsMapLayerMenuOpen] = useState(false);
+  const [mapLayerStyle, setMapLayerStyle] = useState<MapLayerStyle>("standard");
   const mapFilterActionsRef = useRef<HTMLDivElement>(null);
   const mapFilterPanelRef = useRef<HTMLDivElement>(null);
   const listFilterRef = useRef<HTMLDivElement>(null);
@@ -217,7 +219,7 @@ function App() {
   }, [activeView]);
 
   useEffect(() => {
-    if (!isFilterOpen && !isMapFilterOpen) return;
+    if (!isFilterOpen && !isMapFilterOpen && !isMapLayerMenuOpen) return;
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
@@ -233,11 +235,15 @@ function App() {
       if (isFilterOpen && !listFilterRef.current?.contains(target)) {
         setIsFilterOpen(false);
       }
+
+      if (isMapLayerMenuOpen && !mapFilterActionsRef.current?.contains(target)) {
+        setIsMapLayerMenuOpen(false);
+      }
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [isFilterOpen, isMapFilterOpen]);
+  }, [isFilterOpen, isMapFilterOpen, isMapLayerMenuOpen]);
 
   useEffect(() => {
     if (!session) return;
@@ -1040,12 +1046,81 @@ function App() {
             userLocation={userLocation}
             pickingLocation={pickingLocation}
             recenterSignal={recenterSignal}
+            mapLayerStyle={mapLayerStyle}
             onSelectRequest={setSelectedRequest}
             onCenterChange={handleMapCenterChange}
             onManualLocationPreview={previewManualLocation}
           />
           {!pickingLocation && (
             <div ref={mapFilterActionsRef} className="fixed right-4 top-1/2 z-[910] flex -translate-y-1/2 flex-col gap-3">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsMapLayerMenuOpen((open) => !open)}
+                  className={`grid h-12 w-12 place-items-center rounded-pill border text-[22px] shadow-soft ${
+                    isMapLayerMenuOpen ? "border-sos-orange bg-sos-orange text-white" : "border-sos-border bg-white text-sos-ink"
+                  }`}
+                  aria-label="Cambiar tipo de mapa"
+                  aria-expanded={isMapLayerMenuOpen}
+                >
+                  <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M9 18.5 3.8 16V5.5L9 8m0 10.5 6-2.5m-6 2.5V8m6 8 5.2 2.5V8L15 5.5m0 10.5V5.5M9 8l6-2.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+
+                {isMapLayerMenuOpen && (
+                  <div className="absolute right-14 top-0 w-44 rounded-card border border-sos-border bg-white p-2 shadow-sheet">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMapLayerStyle("standard");
+                        setIsMapLayerMenuOpen(false);
+                      }}
+                      className={`flex min-h-11 w-full items-center gap-3 rounded-input px-3 text-left text-[14px] font-extrabold ${
+                        mapLayerStyle === "standard" ? "bg-sos-primarySoft text-sos-primary" : "text-sos-ink hover:bg-sos-background"
+                      }`}
+                    >
+                      <svg aria-hidden="true" className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M9 18.5 3.8 16V5.5L9 8m0 10.5 6-2.5m-6 2.5V8m6 8 5.2 2.5V8L15 5.5m0 10.5V5.5M9 8l6-2.5"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Mapa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMapLayerStyle("satellite");
+                        setIsMapLayerMenuOpen(false);
+                      }}
+                      className={`mt-1 flex min-h-11 w-full items-center gap-3 rounded-input px-3 text-left text-[14px] font-extrabold ${
+                        mapLayerStyle === "satellite" ? "bg-sos-primarySoft text-sos-primary" : "text-sos-ink hover:bg-sos-background"
+                      }`}
+                    >
+                      <svg aria-hidden="true" className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M4.5 16.5 12 4l7.5 12.5H4.5Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                        />
+                        <path d="M8 16.5 12 10l4 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                      Satélite
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setIsMapFilterOpen((open) => !open)}

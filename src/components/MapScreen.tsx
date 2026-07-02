@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import { createRequestClusterMarker, createRequestMarker } from "./RequestMarker";
 import type { Coordinates, Request } from "../types/request";
@@ -8,6 +8,7 @@ interface MapScreenProps {
   userLocation?: Coordinates;
   pickingLocation: boolean;
   recenterSignal: number;
+  mapLayerStyle: MapLayerStyle;
   onSelectRequest: (request: Request) => void;
   onCenterChange: (location: Coordinates) => void;
   onManualLocationPreview: (location: Coordinates) => void;
@@ -26,7 +27,7 @@ const MAP_LAYERS = {
   },
 } as const;
 
-type MapLayerStyle = keyof typeof MAP_LAYERS;
+export type MapLayerStyle = keyof typeof MAP_LAYERS;
 
 type RequestCluster = {
   requests: Request[];
@@ -70,6 +71,7 @@ export function MapScreen({
   userLocation,
   pickingLocation,
   recenterSignal,
+  mapLayerStyle,
   onSelectRequest,
   onCenterChange,
   onManualLocationPreview,
@@ -79,7 +81,6 @@ export function MapScreen({
   const tileLayer = useRef<L.TileLayer | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
   const didCenterOnUser = useRef(false);
-  const [mapLayerStyle, setMapLayerStyle] = useState<MapLayerStyle>("standard");
   const center = useMemo(() => userLocation ?? DEFAULT_CENTER, [userLocation]);
 
   useEffect(() => {
@@ -193,28 +194,6 @@ export function MapScreen({
   return (
     <div className="relative h-full w-full">
       <div ref={mapElement} className="h-full w-full" aria-label="Mapa de solicitudes de apoyo" />
-      <div className="absolute left-4 bottom-[172px] z-[650] flex rounded-pill border border-sos-border bg-white p-1 shadow-soft">
-        <button
-          type="button"
-          onClick={() => setMapLayerStyle("standard")}
-          className={`min-h-9 rounded-pill px-4 text-[13px] font-extrabold ${
-            mapLayerStyle === "standard" ? "bg-sos-orange text-white" : "text-sos-ink"
-          }`}
-          aria-pressed={mapLayerStyle === "standard"}
-        >
-          Mapa
-        </button>
-        <button
-          type="button"
-          onClick={() => setMapLayerStyle("satellite")}
-          className={`min-h-9 rounded-pill px-4 text-[13px] font-extrabold ${
-            mapLayerStyle === "satellite" ? "bg-sos-orange text-white" : "text-sos-ink"
-          }`}
-          aria-pressed={mapLayerStyle === "satellite"}
-        >
-          Satélite
-        </button>
-      </div>
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] h-9 w-9 -translate-x-1/2 -translate-y-1/2">
         <span className="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 bg-sos-pending" />
         <span className="absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2 bg-sos-pending" />
