@@ -27,12 +27,11 @@ export function AccountMenu({ session, onOpenAccount, onSignOut, onDeleteAccount
   }, [isOpen]);
 
   return (
-    <div ref={menuRef} className="relative flex items-center gap-3">
-      <span className="max-w-[150px] truncate text-[13px] font-bold text-sos-ink">{label}</span>
+    <div ref={menuRef} className="relative flex items-center">
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="grid h-9 w-9 place-items-center rounded-pill border border-sos-border bg-white text-[20px] text-sos-ink shadow-soft"
+        className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-[22px] text-sos-ink"
         aria-label="Configuración de cuenta"
         aria-expanded={isOpen}
       >

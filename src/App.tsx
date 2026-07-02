@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountScreen } from "./components/AccountScreen";
 import { AccountDeletedDialog } from "./components/AccountDeletedDialog";
-import { AppHeader } from "./components/AppHeader";
+import { AppHeader, type HeaderNotification } from "./components/AppHeader";
 import { AppLayout } from "./components/AppLayout";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { DeleteAccountPasswordDialog } from "./components/DeleteAccountPasswordDialog";
@@ -509,6 +509,29 @@ function App() {
   const listRequests = activeView === "requests" ? visibleRequests : visibleMyRequests;
   const pendingListRequests = listRequests.filter((request) => request.status === "pending");
   const resolvedListRequests = listRequests.filter((request) => request.status === "resolved");
+  const headerNotifications = useMemo<HeaderNotification[]>(
+    () =>
+      requests
+        .filter((request) => request.createdBy === requestService.currentUserId)
+        .flatMap((request) =>
+          request.supportReports
+            .filter(
+              (report) =>
+                report.supporterId !== requestService.currentUserId &&
+                (report.status === "pending_confirmation" || report.status === "expired"),
+            )
+            .map((report) => ({
+              id: report.id,
+              requestId: request.id,
+              title: request.item,
+              message: report.status === "expired" ? "Expirado" : "Apoyo ofrecido",
+              createdAt: report.createdAt,
+              tone: report.status === "expired" ? ("expired" as const) : ("success" as const),
+            })),
+        )
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [requests],
+  );
   const contentTopClass = isOffline ? "top-48" : "top-44";
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
   const currentUserPhone = session?.phone || "";
@@ -526,6 +549,12 @@ function App() {
       setToast(null);
       toastTimer.current = null;
     }, duration);
+  }
+
+  function handleSelectHeaderNotification(notification: HeaderNotification) {
+    const targetRequest = requests.find((request) => request.id === notification.requestId);
+    setActiveView("mine");
+    if (targetRequest) setSelectedRequest(targetRequest);
   }
 
   async function handleModerationBlocked(error: unknown) {
@@ -1007,7 +1036,9 @@ function App() {
         activeView={activeView}
         isOffline={isOffline}
         session={session}
+        notifications={headerNotifications}
         onChangeView={setActiveView}
+        onSelectNotification={handleSelectHeaderNotification}
         onOpenAccount={() => setIsAccountOpen(true)}
         onSignOut={handleSignOut}
         onDeleteAccountData={handleDeleteAccountData}
