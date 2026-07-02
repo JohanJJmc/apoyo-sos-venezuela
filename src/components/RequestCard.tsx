@@ -16,19 +16,16 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
         category: "text-sos-resolved",
         badge: "bg-sos-resolvedSoft text-sos-resolved",
         label: "Atendido",
-        eyebrow: "Atendido",
       }
     : {
         border: "border-sos-pending",
         category: "text-sos-pending",
         badge: "bg-sos-pendingSoft text-sos-pending",
         label: timeAgo(request.createdAt).replace("hace", "Hace"),
-        eyebrow: "Vigente",
       };
 
   return (
     <article>
-      <p className="mb-2 px-1 text-[12px] font-bold text-sos-muted/60">{tone.eyebrow}</p>
       <button
         type="button"
         onClick={onClick}

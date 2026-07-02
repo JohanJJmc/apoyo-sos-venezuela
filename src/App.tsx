@@ -7,7 +7,6 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { DeleteAccountPasswordDialog } from "./components/DeleteAccountPasswordDialog";
 import { EmptyState } from "./components/EmptyState";
 import { FilterChips } from "./components/FilterChips";
-import { FloatingActionButton } from "./components/FloatingActionButton";
 import { HomeActionPanel } from "./components/HomeActionPanel";
 import { LoginScreen } from "./components/LoginScreen";
 import { MapScreen, type MapLayerStyle } from "./components/MapScreen";
@@ -80,6 +79,32 @@ type DestructiveDialogState =
   | { type: "delete-account" }
   | null;
 
+function RequestListGroup({
+  title,
+  requests,
+  onSelectRequest,
+}: {
+  title: string;
+  requests: Request[];
+  onSelectRequest: (request: Request) => void;
+}) {
+  if (requests.length === 0) return null;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-4 px-1">
+        <h2 className="text-[16px] font-extrabold text-sos-muted">{title}</h2>
+        <span className="h-px flex-1 bg-sos-border" />
+      </div>
+      <div className="space-y-4">
+        {requests.map((request) => (
+          <RequestCard key={request.id} request={request} onClick={() => onSelectRequest(request)} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 const SPLASH_MIN_DURATION_MS = 1700;
 
 function App() {
@@ -109,7 +134,6 @@ function App() {
   const [mapCenterCountryCode, setMapCenterCountryCode] = useState("");
   const [mapCenterCountryName, setMapCenterCountryName] = useState("");
   const [isDetectingMapCenterAddress, setIsDetectingMapCenterAddress] = useState(false);
-  const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
   const [isMapLayerMenuOpen, setIsMapLayerMenuOpen] = useState(false);
@@ -466,15 +490,9 @@ function App() {
           (request.status === "pending" && filters.showPending) ||
           (request.status === "resolved" && filters.showResolved);
         const categoryVisible = filters.category === "Todas" || request.category === filters.category;
-        const query = search.trim().toLowerCase();
-        const searchVisible =
-          !query ||
-          [request.category, request.item, request.description, request.address, request.requesterName, request.requesterPhone]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(query));
-        return statusVisible && categoryVisible && searchVisible;
+        return statusVisible && categoryVisible;
       }),
-    [requests, filters, search],
+    [requests, filters],
   );
 
   const visibleMyRequests = useMemo(
@@ -488,6 +506,9 @@ function App() {
   );
   const requestFormSelectedLocation = manualLocation ?? (activeView === "map" ? mapCenterLocation : undefined);
   const requestFormInitialAddress = manualAddress || (activeView === "map" ? mapCenterAddress : "") || detectedAddress;
+  const listRequests = activeView === "requests" ? visibleRequests : visibleMyRequests;
+  const pendingListRequests = listRequests.filter((request) => request.status === "pending");
+  const resolvedListRequests = listRequests.filter((request) => request.status === "resolved");
   const contentTopClass = isOffline ? "top-48" : "top-44";
   const currentUserName = session?.name || session?.email?.split("@")[0] || "";
   const currentUserPhone = session?.phone || "";
@@ -1167,47 +1188,45 @@ function App() {
       {activeView !== "map" && (
         <section className={`absolute inset-x-0 bottom-0 ${contentTopClass} flex flex-col bg-sos-background`}>
           <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3">
-            <div ref={listFilterRef}>
-              <div className="mb-5 flex items-center gap-3">
-                <label className="flex min-h-14 flex-1 items-center gap-3 rounded-input border border-sos-border bg-white px-4">
-                  <span className="text-3xl leading-none">⌕</span>
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    onFocus={() => setIsFilterOpen(true)}
-                    placeholder="Dirección, nombre, categoría o insumo"
-                    className="min-w-0 flex-1 bg-transparent text-[16px] outline-none"
-                  />
-                </label>
+            <div ref={listFilterRef} className="mb-5">
+              <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsFilterOpen((open) => !open)}
-                  className={`grid h-12 w-12 place-items-center rounded-pill border text-2xl ${
-                    isFilterOpen ? "border-sos-orange bg-sos-orange text-white" : "border-transparent text-sos-muted"
+                  className={`inline-flex min-h-12 items-center gap-2 rounded-pill border px-4 text-[15px] font-extrabold shadow-soft ${
+                    isFilterOpen ? "border-sos-orange bg-sos-orange text-white" : "border-sos-border bg-white text-sos-ink"
                   }`}
                   aria-label="Filtros"
                   aria-expanded={isFilterOpen}
                 >
                   <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    <path
+                      d="M4 5h16l-6.5 7.4V18l-3 1.5v-7.1L4 5Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
+                  Filtros
                 </button>
               </div>
 
               {isFilterOpen && (
-                <div className="mb-5">
+                <div className="mt-3">
                   <FilterChips filters={filters} onChange={setFilters} placement="static" />
                 </div>
               )}
             </div>
 
-            <div className="space-y-3">
-              {(activeView === "requests" ? visibleRequests : visibleMyRequests).length === 0 ? (
+            <div className="space-y-8">
+              {listRequests.length === 0 ? (
                 <EmptyState title="No hay solicitudes para mostrar." message="Revisa los filtros o crea una solicitud nueva." />
               ) : (
-                (activeView === "requests" ? visibleRequests : visibleMyRequests).map((request) => (
-                  <RequestCard key={request.id} request={request} onClick={() => setSelectedRequest(request)} />
-                ))
+                <>
+                  <RequestListGroup title="Vigente" requests={pendingListRequests} onSelectRequest={setSelectedRequest} />
+                  <RequestListGroup title="Apoyados" requests={resolvedListRequests} onSelectRequest={setSelectedRequest} />
+                </>
               )}
             </div>
           </div>
