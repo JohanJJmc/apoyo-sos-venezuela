@@ -1214,8 +1214,6 @@ function App() {
         </section>
       )}
 
-      {activeView !== "map" && <FloatingActionButton onClick={openForm} />}
-
       <RequestFormBottomSheet
         isOpen={isFormOpen}
         currentLocation={userLocation}
