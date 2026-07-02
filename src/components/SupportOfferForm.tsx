@@ -93,7 +93,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
       <section className="h-full overflow-y-auto px-7 pb-7 pt-20">
         <BackButton onClick={onClose} label="Ofreciendo apoyo" />
 
-        <div className="space-y-5">
+        <div className="mt-10 space-y-6">
           <section className="space-y-3">
             <p className="text-[14px] font-extrabold text-sos-muted">¿Quién apoya?</p>
             <TextInput
@@ -143,7 +143,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
             type="button"
             onClick={submitSupport}
             disabled={isSubmitting}
-            className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+            className="sos-gradient mt-6 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
           >
             {isSubmitting ? "Enviando..." : "Completar solicitud"}
           </button>

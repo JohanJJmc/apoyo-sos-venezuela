@@ -54,7 +54,7 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
         Necesitamos tu nombre y teléfono para que una solicitud o apoyo pueda ser confirmado de forma segura.
       </p>
 
-      <section className="mt-10 space-y-4">
+      <section className="mt-10 space-y-5">
         <TextInput
           label="Nombre y apellido"
           value={name}
@@ -76,7 +76,7 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
         </p>
       </section>
 
-      <div className="flex-1" />
+      <div className="min-h-10 flex-1" />
 
       <button
         type="button"

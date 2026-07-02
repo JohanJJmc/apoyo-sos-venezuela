@@ -262,7 +262,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
         </p>
 
-        <form className="mt-8 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="mt-9 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <input name="nexo_register_phone" value={signupPhone} onChange={(event) => setSignupPhone(event.target.value)} placeholder="Teléfono" inputMode="tel" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
@@ -270,9 +270,9 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />
         </form>
 
-        <div className="mt-5">
+        <div className="mt-8 space-y-4">
           <SecurityNotice />
-          <label className="mt-3 flex items-start gap-3 rounded-input border border-sos-border bg-white p-4 text-[13px] font-extrabold leading-snug text-sos-ink">
+          <label className="flex items-start gap-3 rounded-input border border-sos-border bg-white p-4 text-[13px] font-extrabold leading-snug text-sos-ink">
             <input
               type="checkbox"
               checked={acceptedSafetyTerms}
@@ -285,10 +285,10 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           </label>
         </div>
 
-        {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
-        <div className="flex-1" />
+        {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
+        <div className="min-h-8 flex-1" />
 
-        <div className="mb-4">
+        <div className="mb-5">
           <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
         </div>
         <button type="button" disabled={!canSignUp || isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
@@ -309,7 +309,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.
         </p>
 
-        <form className="mt-8 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="mt-9 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <input
             name="nexo_recovery_email"
             value={resetEmail}
@@ -325,7 +325,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
         {info && <p className="mt-5 rounded-input bg-sos-primarySoft p-4 text-[13px] font-extrabold text-sos-primary">{info}</p>}
         {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
-        <div className="flex-1" />
+        <div className="min-h-8 flex-1" />
 
         <button type="button" disabled={isLoading} onClick={submitForgotPassword} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Enviar correo
@@ -343,7 +343,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Crea una nueva contraseña para volver a entrar a tu cuenta.
         </p>
 
-        <form className="mt-10 space-y-3" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="mt-10 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <PasswordField
             name="nexo_new_recovery_password"
             value={resetPassword}
@@ -365,7 +365,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         </form>
 
         {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
-        <div className="flex-1" />
+        <div className="min-h-8 flex-1" />
 
         <button type="button" disabled={isLoading} onClick={submitResetPassword} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Guardar contraseña
@@ -424,7 +424,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         </div>
       )}
 
-      <form className="mt-8 space-y-3" autoComplete="on" onSubmit={(event) => event.preventDefault()}>
+      <form className="mt-9 space-y-4" autoComplete="on" onSubmit={(event) => event.preventDefault()}>
         <input name="email" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
         <PasswordField name="password" value={loginPassword} onChange={setLoginPassword} placeholder="Ingresa tu contraseña" visible={showLoginPassword} onToggle={() => setShowLoginPassword((visible) => !visible)} autoComplete="current-password" />
       </form>
@@ -434,7 +434,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
       </button>
 
       {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
-      <div className="flex-1" />
+      <div className="min-h-8 flex-1" />
 
       <button type="button" disabled={!canLogin || isLoading} onClick={submitLogin} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
         Iniciar sesión

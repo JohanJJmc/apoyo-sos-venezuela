@@ -176,7 +176,7 @@ export function RequestFormModal({
       >
         <BackButton onClick={onClose} label="Nueva solicitud" />
 
-        <div className="space-y-5">
+        <div className="mt-10 space-y-6">
           <CategoryDropdown category={category} item={item} onCategoryChange={changeCategory} onItemChange={setItem} />
 
           <section className="space-y-3">
@@ -258,7 +258,7 @@ export function RequestFormModal({
             type="button"
             onClick={submit}
             disabled={!canSubmit || isSubmitting}
-            className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
+            className="sos-gradient mt-6 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
           >
             {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
           </button>
