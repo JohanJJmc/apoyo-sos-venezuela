@@ -8,7 +8,7 @@ const ACTION_LIMITS = {
   },
   create_request: {
     user: { limit: 10, windowSeconds: 60 * 60 },
-    ip: { limit: 80, windowSeconds: 60 * 60 },
+    ip: { limit: 10, windowSeconds: 60 * 60 },
     message: "Llegaste al límite de 10 solicitudes por hora. Espera un poco antes de publicar otra.",
   },
   offer_support: {
