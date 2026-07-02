@@ -2,7 +2,7 @@ import { supabase } from "./supabaseClient";
 
 export type RateLimitAction = "signup" | "create_request" | "offer_support";
 
-export async function checkRateLimit(action: RateLimitAction) {
+export async function checkRateLimit(action: RateLimitAction, metadata: Record<string, string | undefined> = {}) {
   if (!navigator.onLine) return;
 
   const { data: sessionData } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
@@ -12,7 +12,7 @@ export async function checkRateLimit(action: RateLimitAction) {
       "Content-Type": "application/json",
       ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
     },
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action, ...metadata }),
   });
 
   const result = (await response.json().catch(() => ({}))) as { allowed?: boolean; message?: string };

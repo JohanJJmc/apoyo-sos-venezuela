@@ -75,3 +75,6 @@ grant execute on function public.check_rate_limit(text, text, integer, integer) 
 create index if not exists rate_limit_windows_cleanup_idx
 on public.rate_limit_windows (window_start);
 
+create index if not exists support_reports_pending_supporter_idx
+on public.support_reports(supporter_id)
+where status = 'pending_confirmation';

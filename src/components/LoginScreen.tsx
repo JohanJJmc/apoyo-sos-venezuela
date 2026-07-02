@@ -177,7 +177,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
     setError("");
     try {
       await verifyTurnstileToken(turnstileToken);
-      await checkRateLimit("signup");
+      await checkRateLimit("signup", { email: cleanSignupEmail });
       await authService.signUp(cleanSignupEmail, signupPassword, cleanFullName, cleanSignupPhone);
       setInfo(`Te enviamos un correo de confirmación a ${cleanSignupEmail}.`);
       setResendSeconds(60);
