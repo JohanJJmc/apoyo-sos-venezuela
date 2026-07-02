@@ -11,15 +11,29 @@ export const MAX_PENDING_REQUESTS_PER_CATEGORY_ITEM_RADIUS = 20;
 export const MAX_PENDING_REQUESTS_PER_AREA_RADIUS = 120;
 export const SUPPORT_CONFIRMATION_TIMEOUT_HOURS = 6;
 
-function throwSupabaseError(error: { message?: string; details?: string | null; hint?: string | null; code?: string } | null) {
-  if (!error) return;
+async function requestAction<T>(body: Record<string, unknown>) {
+  if (!supabase) throw new Error("Supabase no está configurado.");
 
-  const message = [error.message, error.details, error.hint].filter(Boolean).join(" ");
-  if (message.toLowerCase().includes("row-level security")) {
-    throw new Error("Supabase bloqueó la solicitud por permisos. Ejecuta el SQL de permisos para usuarios autenticados.");
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session?.access_token) {
+    throw new Error("Tu sesión expiró. Ingresa nuevamente.");
   }
 
-  throw new Error(message || "Supabase rechazó la solicitud.");
+  const response = await fetch("/api/request-actions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const result = (await response.json().catch(() => ({}))) as { ok?: boolean; data?: T; message?: string };
+  if (!response.ok || !result.ok) {
+    throw new Error(result.message || "No se pudo completar la acción.");
+  }
+
+  return result.data as T;
 }
 
 type RequestRow = {
@@ -115,27 +129,6 @@ function mapSupportReport(row: SupportReportRow): SupportReport {
   };
 }
 
-function requestToInsert(
-  input: Omit<Request, "id" | "status" | "partialSupport" | "createdAt" | "createdBy" | "comments" | "supportReports">,
-) {
-  return {
-    category: input.category,
-    item: input.item,
-    quantity: input.quantity,
-    description: input.description ?? null,
-    photo_url: input.photoUrl ?? null,
-    latitude: input.latitude,
-    longitude: input.longitude,
-    status: "pending" as const,
-    partial_support: false,
-    created_by: getCurrentUserId(),
-    requester_name: input.requesterName ?? null,
-    requester_phone: input.requesterPhone ?? null,
-    requester_anonymous: input.requesterAnonymous ?? false,
-    address: input.address ?? null,
-  };
-}
-
 async function listSupabaseRequests() {
   if (!supabase) return [];
 
@@ -184,8 +177,7 @@ export const requestService = {
   ) {
     if (!supabase) return localRequestStore.createRequest(input);
 
-    const { data, error } = await supabase.from("requests").insert(requestToInsert(input)).select("*").single();
-    throwSupabaseError(error);
+    const data = await requestAction<RequestRow>({ action: "create_request", input });
     return mapRequestWithSignedPhotos(data as RequestRow);
   },
 
@@ -234,24 +226,7 @@ export const requestService = {
   ) {
     if (!supabase) return localRequestStore.offerSupport(requestId, input);
 
-    const { data, error } = await supabase
-      .from("support_reports")
-      .insert({
-        request_id: requestId,
-        supporter_id: getCurrentUserId(),
-        supporter_name: input.supporterName ?? null,
-        supporter_phone: input.supporterPhone ?? null,
-        details: input.details ?? null,
-        photo_url: input.photoUrl ?? null,
-        latitude: input.latitude ?? null,
-        longitude: input.longitude ?? null,
-        anonymous: input.anonymous ?? false,
-        status: "pending_confirmation",
-      })
-      .select("*")
-      .single();
-
-    if (error) throw error;
+    const data = await requestAction<SupportReportRow>({ action: "offer_support", requestId, input });
     const report = mapSupportReport(data as SupportReportRow);
     return { ...report, photoUrl: await signedPhotoUrl(report.photoUrl) };
   },
@@ -259,49 +234,13 @@ export const requestService = {
   async confirmSupport(requestId: string, status: SupportReport["status"]) {
     if (!supabase) return localRequestStore.confirmSupport(requestId, status);
 
-    const updates = {
-      status: status === "confirmed" ? ("resolved" as const) : ("pending" as const),
-      partial_support: status === "partial",
-      resolved_at: status === "confirmed" ? new Date().toISOString() : null,
-    };
-
-    const { error: requestError } = await supabase.from("requests").update(updates).eq("id", requestId);
-    if (requestError) {
-      if (requestError.message.toLowerCase().includes("resolved_at")) {
-        const { error: retryError } = await supabase
-          .from("requests")
-          .update({ status: updates.status, partial_support: updates.partial_support })
-          .eq("id", requestId);
-        throwSupabaseError(retryError);
-      } else {
-        throwSupabaseError(requestError);
-      }
-    }
-
-    const { data: latestReports, error: reportListError } = await supabase
-      .from("support_reports")
-      .select("*")
-      .eq("request_id", requestId)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (reportListError) throw reportListError;
-    const latestReport = latestReports?.[0] as SupportReportRow | undefined;
-    if (!latestReport) return;
-
-    const { error: reportError } = await supabase.from("support_reports").update({ status }).eq("id", latestReport.id);
-    if (reportError) throw reportError;
+    await requestAction({ action: "confirm_support", requestId, status });
   },
 
   async cancelRequest(requestId: string) {
     if (!supabase) return localRequestStore.cancelRequest(requestId);
 
-    const userId = getCurrentUserId();
-    const { error: supportError } = await supabase.from("support_reports").delete().eq("request_id", requestId);
-    if (supportError) throw supportError;
-
-    const { error: requestError } = await supabase.from("requests").delete().eq("id", requestId).eq("created_by", userId);
-    if (requestError) throw requestError;
+    await requestAction({ action: "cancel_request", requestId });
   },
 
   async deleteCurrentUserData() {

@@ -139,16 +139,22 @@ sequenceDiagram
 
 ## Punto importante de seguridad
 
-Hoy la app ya valida Turnstile, rate limit, texto peligroso y limites de area antes de escribir, pero parte de la escritura todavia ocurre desde el navegador con Supabase.
+La app valida Turnstile, rate limit, texto peligroso y limites de area antes de escribir. Ademas, las acciones principales ya pasan por una API serverless de Vercel: `/api/request-actions`.
 
-Para endurecer produccion, el siguiente paso recomendado es mover estas acciones a APIs serverless:
+Estas acciones criticas ahora se escriben desde servidor:
 
 - Crear solicitud.
 - Ofrecer apoyo.
 - Confirmar apoyo.
 - Cancelar pedido.
 
-Asi el servidor decide, valida y escribe en Supabase. Eso reduce el riesgo de que alguien intente saltarse la app y llamar Supabase directamente.
+Asi el servidor valida sesion, limites y propiedad antes de escribir en Supabase. Eso reduce el riesgo de que alguien intente saltarse la app y llamar Supabase directamente.
+
+Pendientes para una capa mas estricta:
+
+- Mover la verificacion de Turnstile completamente dentro de `/api/request-actions`.
+- Mover expiracion de apoyos y borrado de datos de cuenta a APIs serverless.
+- Revisar politicas RLS para limitar escrituras directas desde el navegador.
 
 ## Resumen rapido
 
@@ -158,4 +164,3 @@ Asi el servidor decide, valida y escribe en Supabase. Eso reduce el riesgo de qu
 - Geoapify convierte coordenadas en direcciones.
 - Leaflet/OpenStreetMap muestran el mapa.
 - Reglas locales y OpenAI opcional ayudan a bloquear contenido peligroso.
-
