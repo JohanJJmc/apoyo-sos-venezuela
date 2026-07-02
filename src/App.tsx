@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccountScreen } from "./components/AccountScreen";
 import { AppHeader } from "./components/AppHeader";
 import { AppLayout } from "./components/AppLayout";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { EmptyState } from "./components/EmptyState";
 import { FilterChips } from "./components/FilterChips";
 import { FloatingActionButton } from "./components/FloatingActionButton";
@@ -16,7 +17,8 @@ import { SimilarRequestDialog } from "./components/SimilarRequestDialog";
 import { SplashScreen } from "./components/SplashScreen";
 import { SupportOfferForm } from "./components/SupportOfferForm";
 import { ToastMessage } from "./components/ToastMessage";
-import { clearSession, getStoredSession, saveSession, type AppSession } from "./services/authSession";
+import { WelcomeScreen } from "./components/WelcomeScreen";
+import { clearSession, getStoredSession, markWelcomeShown, saveSession, shouldShowWelcome, type AppSession } from "./services/authSession";
 import { authService } from "./services/authService";
 import { reverseGeocodeDetails } from "./services/geocodeService";
 import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
@@ -71,6 +73,11 @@ type ToastState = {
   tone: "info" | "success" | "danger";
 };
 
+type DestructiveDialogState =
+  | { type: "cancel-request"; requestId: string }
+  | { type: "delete-account" }
+  | null;
+
 const SPLASH_MIN_DURATION_MS = 1700;
 
 function App() {
@@ -110,6 +117,9 @@ function App() {
   const [supportRequestId, setSupportRequestId] = useState<string | null>(null);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => isPasswordRecoveryUrl());
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
+  const [destructiveDialog, setDestructiveDialog] = useState<DestructiveDialogState>(null);
+  const [isDestructiveActionRunning, setIsDestructiveActionRunning] = useState(false);
   const manualGeocodeRequest = useRef(0);
   const mapGeocodeRequest = useRef(0);
   const mapGeocodeTimer = useRef<number | null>(null);
@@ -258,7 +268,12 @@ function App() {
     void authService.getSupabaseSession().then((nextSession) => {
       if (!isMounted) return;
       if (nextSession) {
-        if (!getStoredSession()) showSplash();
+        if (shouldShowWelcome(nextSession)) {
+          setIsWelcomeOpen(true);
+          setIsSplashVisible(false);
+        } else if (!getStoredSession()) {
+          showSplash();
+        }
         setSession(nextSession);
         return;
       }
@@ -286,7 +301,12 @@ function App() {
           name: nextSession.user.user_metadata?.full_name ?? undefined,
           phone: nextSession.user.user_metadata?.phone ?? undefined,
         };
-        if (event === "SIGNED_IN" || event === "PASSWORD_RECOVERY") showSplash();
+        if (event === "SIGNED_IN" && shouldShowWelcome(nextAppSession)) {
+          setIsWelcomeOpen(true);
+          setIsSplashVisible(false);
+        } else if (event === "SIGNED_IN" || event === "PASSWORD_RECOVERY") {
+          showSplash();
+        }
         saveSession(nextAppSession);
         setSession(nextAppSession);
       }
@@ -701,13 +721,15 @@ function App() {
   }
 
   async function cancelRequest(requestId: string) {
-    const confirmed = window.confirm("¿Seguro que quieres cancelar este pedido? La solicitud desaparecerá del mapa y de las listas.");
-    if (!confirmed) return;
+    setDestructiveDialog({ type: "cancel-request", requestId });
+  }
 
+  async function runCancelRequest(requestId: string) {
     try {
       await requestService.cancelRequest(requestId);
       setSelectedRequest(null);
       await reloadRequests();
+      showToast("Pedido cancelado correctamente.", "success");
     } catch (nextError) {
       showToast(getErrorMessage(nextError, "No se pudo cancelar el pedido."), "danger");
     }
@@ -755,10 +777,15 @@ function App() {
   }
 
   function handleLogin(nextSession: AppSession) {
-    showSplash();
     saveSession(nextSession);
     setSession(nextSession);
     setAuthRequiredForRequest(false);
+    if (shouldShowWelcome(nextSession)) {
+      setIsWelcomeOpen(true);
+      setIsSplashVisible(false);
+    } else {
+      showSplash();
+    }
     void reloadRequests();
   }
 
@@ -770,12 +797,11 @@ function App() {
 
   async function handleDeleteAccountData() {
     if (!session) return;
+    setDestructiveDialog({ type: "delete-account" });
+  }
 
-    const confirmed = window.confirm(
-      "Esto eliminará tu cuenta y borrará tus solicitudes y apoyos asociados. Esta acción no se puede deshacer. ¿Quieres continuar?",
-    );
-    if (!confirmed) return;
-
+  async function runDeleteAccountData() {
+    if (!session) return;
     try {
       if (session.isAnonymous) {
         await requestService.deleteCurrentUserData();
@@ -789,7 +815,22 @@ function App() {
       setIsFormOpen(false);
       setSupportRequestId(null);
     } catch (nextError) {
-      window.alert(getErrorMessage(nextError, "No se pudo eliminar la cuenta."));
+      showToast(getErrorMessage(nextError, "No se pudo eliminar la cuenta."), "danger");
+    }
+  }
+
+  async function confirmDestructiveAction() {
+    if (!destructiveDialog || isDestructiveActionRunning) return;
+    setIsDestructiveActionRunning(true);
+    try {
+      if (destructiveDialog.type === "cancel-request") {
+        await runCancelRequest(destructiveDialog.requestId);
+      } else {
+        await runDeleteAccountData();
+      }
+      setDestructiveDialog(null);
+    } finally {
+      setIsDestructiveActionRunning(false);
     }
   }
 
@@ -809,6 +850,18 @@ function App() {
 
   if (!session) {
     return <LoginScreen onLogin={handleLogin} onNotify={showToast} />;
+  }
+
+  if (isWelcomeOpen) {
+    return (
+      <WelcomeScreen
+        onEnter={() => {
+          markWelcomeShown(session);
+          setIsWelcomeOpen(false);
+          void reloadRequests();
+        }}
+      />
+    );
   }
 
   if (isSplashVisible) {
@@ -878,6 +931,17 @@ function App() {
           <ToastMessage message={toast.message} tone={toast.tone} />
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(destructiveDialog)}
+        cancelLabel="Cancelar"
+        confirmLabel={destructiveDialog?.type === "delete-account" ? "Eliminar cuenta" : "Eliminar pedido"}
+        isLoading={isDestructiveActionRunning}
+        onCancel={() => {
+          if (!isDestructiveActionRunning) setDestructiveDialog(null);
+        }}
+        onConfirm={confirmDestructiveAction}
+      />
 
       {activeView === "map" && (
         <section className={`absolute inset-x-0 bottom-0 ${contentTopClass}`}>

@@ -31,6 +31,7 @@ export default {
         floating: "0 14px 34px rgba(30, 91, 255, 0.28)",
         sheet: "0 -14px 36px rgba(16, 42, 67, 0.14)",
         marker: "0 8px 20px rgba(16, 42, 67, 0.22)",
+        modal: "0 18px 40px rgba(16, 42, 67, 0.22)",
       },
       fontFamily: {
         sans: [

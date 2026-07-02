@@ -1,4 +1,4 @@
-import { clearSession, saveSession, type AppSession } from "./authSession";
+import { clearSession, markPendingWelcome, saveSession, type AppSession } from "./authSession";
 import { supabase } from "./supabaseClient";
 
 const LOCAL_SIGNUP_KEY = "nexo-local-signup";
@@ -103,6 +103,7 @@ export const authService = {
     if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
       throw new Error("Este correo ya tiene una cuenta. Intenta iniciar sesión.");
     }
+    markPendingWelcome(cleanEmail);
   },
 
   async verifySignupCode(email: string, code: string) {
