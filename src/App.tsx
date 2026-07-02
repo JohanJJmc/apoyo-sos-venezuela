@@ -21,7 +21,11 @@ import { authService } from "./services/authService";
 import { reverseGeocodeDetails } from "./services/geocodeService";
 import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
 import { requestQueue } from "./services/requestQueue";
-import { requestService } from "./services/requestService";
+import {
+  MAX_CATEGORY_REQUESTS_RADIUS_METERS,
+  MAX_PENDING_REQUESTS_PER_CATEGORY_RADIUS,
+  requestService,
+} from "./services/requestService";
 import { checkRateLimit } from "./services/rateLimitService";
 import { SAFETY_BLOCK_THRESHOLD, safetyService } from "./services/safetyService";
 import { supabase } from "./services/supabaseClient";
@@ -540,12 +544,18 @@ function App() {
       });
     } catch (nextError) {
       if (nextError instanceof ModerationBlockedError) {
-        setFormError(await handleModerationBlocked(nextError));
+        const message = await handleModerationBlocked(nextError);
+        setFormError(message);
+        showToast(message, "danger");
       } else {
-        setFormError(getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad."));
+        const message = getErrorMessage(nextError, "El contenido no pudo ser validado por seguridad.");
+        setFormError(message);
+        showToast(message, "danger");
       }
       return;
     }
+
+    if (!(await requestCategoryHasCapacity(draft))) return;
 
     const similar = await requestService.findSimilarPending(draft.category, draft);
     if (similar) {
@@ -590,6 +600,7 @@ function App() {
   async function createDraftAnyway() {
     if (!pendingDraft) return;
     try {
+      if (!(await requestCategoryHasCapacity(pendingDraft))) return;
       await requestService.createRequest(pendingDraft);
       await finishCreateFlow();
       showToast("Solicitud enviada correctamente.", "success");
@@ -606,6 +617,20 @@ function App() {
       await finishCreateFlow();
       showToast("Sin conexión: solicitud guardada para enviarse luego.", "info");
     }
+  }
+
+  async function requestCategoryHasCapacity(draft: RequestDraft) {
+    const nearbyCount = await requestService.countNearbyPendingByCategory(draft.category, draft);
+    if (nearbyCount < MAX_PENDING_REQUESTS_PER_CATEGORY_RADIUS) return true;
+
+    const radiusText =
+      MAX_CATEGORY_REQUESTS_RADIUS_METERS >= 1000
+        ? `${MAX_CATEGORY_REQUESTS_RADIUS_METERS / 1000} km`
+        : `${MAX_CATEGORY_REQUESTS_RADIUS_METERS} metros`;
+    const message = `Ya hay ${nearbyCount} solicitudes pendientes de ${draft.category} en un radio de ${radiusText}. Para evitar duplicados, apoya o revisa una solicitud existente.`;
+    setFormError(message);
+    showToast(message, "danger");
+    return false;
   }
 
   async function joinSimilar() {

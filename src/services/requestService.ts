@@ -6,6 +6,8 @@ import { signedPhotoUrl } from "./photoStorageService";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 export const SIMILAR_REQUEST_RADIUS_METERS = 200;
+export const MAX_CATEGORY_REQUESTS_RADIUS_METERS = 500;
+export const MAX_PENDING_REQUESTS_PER_CATEGORY_RADIUS = 5;
 export const SUPPORT_CONFIRMATION_TIMEOUT_HOURS = 6;
 
 function throwSupabaseError(error: { message?: string; details?: string | null; hint?: string | null; code?: string } | null) {
@@ -194,6 +196,20 @@ export const requestService = {
         request.category === category &&
         distanceInMeters(location, request) <= radiusMeters,
     );
+  },
+
+  async countNearbyPendingByCategory(
+    category: string,
+    location: Coordinates,
+    radiusMeters = MAX_CATEGORY_REQUESTS_RADIUS_METERS,
+  ) {
+    const requests = await this.listRequests();
+    return requests.filter(
+      (request) =>
+        request.status === "pending" &&
+        request.category === category &&
+        distanceInMeters(location, request) <= radiusMeters,
+    ).length;
   },
 
   async addComment(requestId: string, text: string) {
