@@ -22,8 +22,9 @@ import { reverseGeocodeDetails } from "./services/geocodeService";
 import { ModerationBlockedError, validateSafeContent } from "./services/moderationService";
 import { requestQueue } from "./services/requestQueue";
 import {
-  MAX_CATEGORY_REQUESTS_RADIUS_METERS,
-  MAX_PENDING_REQUESTS_PER_CATEGORY_RADIUS,
+  MAX_AREA_REQUESTS_RADIUS_METERS,
+  MAX_PENDING_REQUESTS_PER_AREA_RADIUS,
+  MAX_PENDING_REQUESTS_PER_CATEGORY_ITEM_RADIUS,
   requestService,
 } from "./services/requestService";
 import { checkRateLimit } from "./services/rateLimitService";
@@ -555,7 +556,7 @@ function App() {
       return;
     }
 
-    if (!(await requestCategoryHasCapacity(draft))) return;
+    if (!(await requestAreaHasCapacity(draft))) return;
 
     const similar = await requestService.findSimilarPending(draft.category, draft);
     if (similar) {
@@ -600,7 +601,7 @@ function App() {
   async function createDraftAnyway() {
     if (!pendingDraft) return;
     try {
-      if (!(await requestCategoryHasCapacity(pendingDraft))) return;
+      if (!(await requestAreaHasCapacity(pendingDraft))) return;
       await requestService.createRequest(pendingDraft);
       await finishCreateFlow();
       showToast("Solicitud enviada correctamente.", "success");
@@ -619,15 +620,21 @@ function App() {
     }
   }
 
-  async function requestCategoryHasCapacity(draft: RequestDraft) {
-    const nearbyCount = await requestService.countNearbyPendingByCategory(draft.category, draft);
-    if (nearbyCount < MAX_PENDING_REQUESTS_PER_CATEGORY_RADIUS) return true;
+  async function requestAreaHasCapacity(draft: RequestDraft) {
+    const [sameNeedCount, areaCount] = await Promise.all([
+      requestService.countNearbyPendingByCategoryItem(draft.category, draft.item, draft),
+      requestService.countNearbyPendingRequests(draft),
+    ]);
+
+    if (sameNeedCount < MAX_PENDING_REQUESTS_PER_CATEGORY_ITEM_RADIUS && areaCount < MAX_PENDING_REQUESTS_PER_AREA_RADIUS) {
+      return true;
+    }
 
     const radiusText =
-      MAX_CATEGORY_REQUESTS_RADIUS_METERS >= 1000
-        ? `${MAX_CATEGORY_REQUESTS_RADIUS_METERS / 1000} km`
-        : `${MAX_CATEGORY_REQUESTS_RADIUS_METERS} metros`;
-    const message = `Ya hay ${nearbyCount} solicitudes pendientes de ${draft.category} en un radio de ${radiusText}. Para evitar duplicados, apoya o revisa una solicitud existente.`;
+      MAX_AREA_REQUESTS_RADIUS_METERS >= 1000
+        ? `${MAX_AREA_REQUESTS_RADIUS_METERS / 1000} km`
+        : `${MAX_AREA_REQUESTS_RADIUS_METERS} metros`;
+    const message = `Ya se crearon demasiados pedidos de apoyo para esta área en un radio de ${radiusText}. Por favor revisa las solicitudes cercanas para sumarte o apoyar una existente.`;
     setFormError(message);
     showToast(message, "danger");
     return false;

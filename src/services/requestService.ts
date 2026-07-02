@@ -6,8 +6,9 @@ import { signedPhotoUrl } from "./photoStorageService";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 export const SIMILAR_REQUEST_RADIUS_METERS = 200;
-export const MAX_CATEGORY_REQUESTS_RADIUS_METERS = 500;
-export const MAX_PENDING_REQUESTS_PER_CATEGORY_RADIUS = 5;
+export const MAX_AREA_REQUESTS_RADIUS_METERS = 70;
+export const MAX_PENDING_REQUESTS_PER_CATEGORY_ITEM_RADIUS = 20;
+export const MAX_PENDING_REQUESTS_PER_AREA_RADIUS = 120;
 export const SUPPORT_CONFIRMATION_TIMEOUT_HOURS = 6;
 
 function throwSupabaseError(error: { message?: string; details?: string | null; hint?: string | null; code?: string } | null) {
@@ -198,16 +199,27 @@ export const requestService = {
     );
   },
 
-  async countNearbyPendingByCategory(
+  async countNearbyPendingByCategoryItem(
     category: string,
+    item: string,
     location: Coordinates,
-    radiusMeters = MAX_CATEGORY_REQUESTS_RADIUS_METERS,
+    radiusMeters = MAX_AREA_REQUESTS_RADIUS_METERS,
   ) {
     const requests = await this.listRequests();
     return requests.filter(
       (request) =>
         request.status === "pending" &&
         request.category === category &&
+        request.item === item &&
+        distanceInMeters(location, request) <= radiusMeters,
+    ).length;
+  },
+
+  async countNearbyPendingRequests(location: Coordinates, radiusMeters = MAX_AREA_REQUESTS_RADIUS_METERS) {
+    const requests = await this.listRequests();
+    return requests.filter(
+      (request) =>
+        request.status === "pending" &&
         distanceInMeters(location, request) <= radiusMeters,
     ).length;
   },
