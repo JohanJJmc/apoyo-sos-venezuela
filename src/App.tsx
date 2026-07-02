@@ -934,6 +934,12 @@ function App() {
 
       <ConfirmDialog
         isOpen={Boolean(destructiveDialog)}
+        title={destructiveDialog?.type === "delete-account" ? "¿Eliminar tu cuenta?" : "¿Eliminar esta solicitud?"}
+        description={
+          destructiveDialog?.type === "delete-account"
+            ? "Esta acción eliminará tu cuenta, tus solicitudes y tus apoyos asociados. No se puede deshacer."
+            : "Esta acción es irreversible. La solicitud dejará de verse en el mapa y otras personas ya no podrán apoyarla."
+        }
         cancelLabel="Cancelar"
         confirmLabel={destructiveDialog?.type === "delete-account" ? "Eliminar cuenta" : "Eliminar pedido"}
         isLoading={isDestructiveActionRunning}
