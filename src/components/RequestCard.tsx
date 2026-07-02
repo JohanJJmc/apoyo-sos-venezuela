@@ -1,7 +1,6 @@
 import type { Request } from "../types/request";
 import { timeAgo } from "../utils/time";
 import { CategoryIcon } from "./CategoryIcon";
-import { StatusBadge } from "./StatusBadge";
 
 interface RequestCardProps {
   request: Request;
@@ -10,36 +9,52 @@ interface RequestCardProps {
 
 export function RequestCard({ request, onClick }: RequestCardProps) {
   const hasPendingSupport = request.supportReports.some((report) => report.status === "pending_confirmation");
+  const isResolved = request.status === "resolved";
+  const tone = isResolved
+    ? {
+        border: "border-sos-resolved",
+        category: "text-sos-resolved",
+        badge: "bg-sos-resolvedSoft text-sos-resolved",
+        label: "Atendido",
+        eyebrow: "Atendido",
+      }
+    : {
+        border: "border-sos-pending",
+        category: "text-sos-pending",
+        badge: "bg-sos-pendingSoft text-sos-pending",
+        label: timeAgo(request.createdAt).replace("hace", "Hace"),
+        eyebrow: "Vigente",
+      };
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full overflow-hidden rounded-card border border-sos-border bg-white text-left shadow-soft ${
-        request.status === "resolved" ? "border-l-[5px] border-l-[#00A651]" : "border-l-[5px] border-l-[#D90429]"
-      }`}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="inline-flex items-center gap-2 text-[16px] font-bold text-[#C25700]">
-              <CategoryIcon category={request.category} className="h-4 w-4 text-[#0054C8]" />
-              {request.category}
+    <article>
+      <p className="mb-2 px-1 text-[12px] font-bold text-sos-muted/60">{tone.eyebrow}</p>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`w-full rounded-[18px] border bg-white px-5 py-4 text-left shadow-soft transition active:scale-[0.99] ${tone.border}`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={`inline-flex items-center gap-2 text-[18px] font-extrabold leading-tight ${tone.category}`}>
+              <CategoryIcon category={request.category} className="h-6 w-6 shrink-0" />
+              <span className="truncate">{request.category}</span>
             </p>
-            <h3 className="mt-2 text-[20px] font-extrabold leading-tight text-sos-ink">{request.item}</h3>
+            <h3 className="mt-3 text-[21px] font-extrabold leading-tight text-sos-ink">{request.item}</h3>
+            <p className="mt-2 line-clamp-2 text-[18px] font-semibold leading-snug text-sos-ink">
+              {request.address ?? "Dirección no disponible"}
+            </p>
           </div>
-          <StatusBadge status={request.status} partialSupport={request.partialSupport} />
+          <span className={`shrink-0 rounded-pill px-4 py-2 text-[13px] font-extrabold uppercase ${tone.badge}`}>
+            {request.partialSupport && !isResolved ? "Apoyo parcial" : tone.label}
+          </span>
         </div>
-        <p className="mt-1 text-[16px] font-medium text-sos-ink">{request.address ?? "Av. Lorem ipsum,###, La guaira"}</p>
         {hasPendingSupport && request.status === "pending" && (
-          <p className="mt-2 rounded-pill bg-sos-primarySoft px-3 py-2 text-[13px] font-extrabold text-sos-primary">
+          <p className="mt-4 rounded-pill bg-sos-primarySoft px-3 py-2 text-center text-[13px] font-extrabold text-sos-primary">
             Apoyo ofrecido, esperando confirmación
           </p>
         )}
-        <p className="mt-4 border-t border-sos-border pt-3 text-[13px] font-semibold text-sos-muted">
-          Publicada: {timeAgo(request.createdAt)}
-        </p>
-      </div>
-    </button>
+      </button>
+    </article>
   );
 }
