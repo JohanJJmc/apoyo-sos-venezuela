@@ -22,6 +22,15 @@ function supportStatusLabel(status: SupportReport["status"]) {
   return "Ayuda confirmada";
 }
 
+function maskPhone(phone?: string) {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  const visibleDigits = digits.slice(-4);
+
+  if (!visibleDigits) return "Teléfono protegido";
+  return `Teléfono protegido •••• ${visibleDigits}`;
+}
+
 export function RequestDetailModal({
   request,
   currentUserId,
@@ -34,11 +43,17 @@ export function RequestDetailModal({
   if (!request) return null;
 
   const isOwner = request.createdBy === currentUserId;
+  const currentUserSupport = request.supportReports.find((report) => report.supporterId === currentUserId);
+  const canSeeRequesterPhone = isOwner || Boolean(currentUserSupport);
   const pendingSupport = request.supportReports.some((report) => report.status === "pending_confirmation");
   const latestSupport = request.supportReports[request.supportReports.length - 1];
-  const requesterContact = request.requesterAnonymous
-    ? "Anonimo"
-    : [request.requesterName, request.requesterPhone].filter(Boolean).join(" - ");
+  const requesterName = request.requesterAnonymous ? "Anonimo" : request.requesterName;
+  const requesterPhone = request.requesterPhone
+    ? canSeeRequesterPhone
+      ? request.requesterPhone
+      : maskPhone(request.requesterPhone)
+    : "";
+  const requesterContact = [requesterName, requesterPhone].filter(Boolean).join(" - ");
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
@@ -74,10 +89,10 @@ export function RequestDetailModal({
                 <p className="text-[15px] font-extrabold text-sos-ink">
                   {latestSupport.anonymous ? "Alguien ofreció apoyo" : `${latestSupport.supporterName || "Persona solidaria"} ofreció apoyo`}
                 </p>
-                {isOwner && latestSupport.supporterPhone && (
+                {(isOwner || latestSupport.supporterId === currentUserId) && latestSupport.supporterPhone && (
                   <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{latestSupport.supporterPhone}</p>
                 )}
-                {!isOwner && latestSupport.supporterPhone && (
+                {!isOwner && latestSupport.supporterId !== currentUserId && latestSupport.supporterPhone && (
                   <p className="mt-1 text-[13px] font-extrabold text-sos-muted">Teléfono visible solo para quien creó la solicitud</p>
                 )}
                 <p className="mt-1 text-[13px] font-extrabold text-sos-primary">{supportStatusLabel(latestSupport.status)}</p>
