@@ -173,7 +173,7 @@ export function RequestFormModal({
   return (
     <div className={`absolute inset-0 z-[1000] ${pickingLocation ? "pointer-events-none bg-transparent" : "bg-white"}`}>
       <section
-        className={`h-full overflow-y-auto px-7 pb-7 pt-20 ${pickingLocation ? "hidden" : ""}`}
+        className={`nexo-form-screen h-full overflow-y-auto px-7 pb-7 pt-20 ${pickingLocation ? "hidden" : ""}`}
       >
         <BackButton onClick={onClose} label="Nueva solicitud" />
 

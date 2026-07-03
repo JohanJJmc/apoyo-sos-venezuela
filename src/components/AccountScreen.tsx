@@ -98,7 +98,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
   }
 
   return (
-    <main className="min-h-dvh bg-white px-7 pb-7 pt-16 text-sos-ink">
+    <main className="nexo-form-screen min-h-dvh bg-white px-7 pb-7 pt-16 text-sos-ink">
       <BackButton onClick={onBack} label="Mi cuenta" />
 
       <section className="mt-9 space-y-4">

@@ -91,7 +91,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
 
   return (
     <div className="absolute inset-0 z-[1100] bg-white">
-      <section className="h-full overflow-y-auto px-7 pb-7 pt-20">
+      <section className="nexo-form-screen h-full overflow-y-auto px-7 pb-7 pt-20">
         <BackButton onClick={onClose} label="Ofreciendo apoyo" />
 
         <div className="mt-10 space-y-6">

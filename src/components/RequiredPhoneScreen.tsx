@@ -45,7 +45,7 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-20 text-sos-ink">
+    <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-20 text-sos-ink">
       <img src="/assets/nexo-logo.svg" alt="NEXO" className="mx-auto h-16 w-16 rounded-[12px]" />
       <h1 className="mt-10 text-center text-[22px] font-extrabold">Completa tu información</h1>
       <p className="mt-4 text-center text-[15px] font-semibold leading-snug text-sos-muted">

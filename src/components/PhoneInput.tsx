@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   formatPhoneNumber,
+  getDefaultPhoneCountryCode,
   PHONE_COUNTRIES,
   sanitizeNationalPhone,
   splitPhoneNumber,
@@ -29,6 +30,12 @@ export function PhoneInput({
   const pickerRef = useRef<HTMLSpanElement | null>(null);
   const splitValue = splitPhoneNumber(value);
   const selectedCountry = PHONE_COUNTRIES.find((country) => country.code === splitValue.countryCode) ?? PHONE_COUNTRIES[0];
+
+  useEffect(() => {
+    if (!disabled && !value.trim()) {
+      onChange(formatPhoneNumber(getDefaultPhoneCountryCode(), ""));
+    }
+  }, [disabled, onChange, value]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {

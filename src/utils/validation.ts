@@ -2,6 +2,27 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const NAME_ALLOWED_PATTERN = /[^\p{L}\p{M}' -]/gu;
 const PHONE_ALLOWED_PATTERN = /[^\d()+\-.\s]/g;
 const PHONE_SEQUENCE_PATTERNS = ["0123456789", "1234567890", "0987654321", "9876543210"];
+const TIMEZONE_COUNTRY_MAP: Record<string, string> = {
+  "America/Argentina/Buenos_Aires": "AR",
+  "America/Bogota": "CO",
+  "America/Caracas": "VE",
+  "America/Guayaquil": "EC",
+  "America/Havana": "CU",
+  "America/Lima": "PE",
+  "America/Mexico_City": "MX",
+  "America/Montevideo": "UY",
+  "America/Panama": "PA",
+  "America/Puerto_Rico": "PR",
+  "America/Santiago": "CL",
+  "America/Santo_Domingo": "DO",
+  "America/Sao_Paulo": "BR",
+  "America/Tegucigalpa": "HN",
+  "Europe/Madrid": "ES",
+  "Europe/Lisbon": "PT",
+  "Europe/Paris": "FR",
+  "Europe/Rome": "IT",
+  "Europe/Berlin": "DE",
+};
 
 export const PHONE_COUNTRIES = [
   { code: "VE", flag: "🇻🇪", name: "Venezuela", dialCode: "+58", minNationalDigits: 7, maxNationalDigits: 10 },
@@ -73,6 +94,17 @@ export function formatPhoneNumber(countryCode: string, nationalNumber: string) {
   const country = PHONE_COUNTRIES.find((item) => item.code === countryCode) ?? PHONE_COUNTRIES[0];
   const digits = sanitizeNationalPhone(nationalNumber);
   return digits ? `${country.dialCode} ${digits}` : country.dialCode;
+}
+
+export function getDefaultPhoneCountryCode() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezoneCountry = timezone ? TIMEZONE_COUNTRY_MAP[timezone] : "";
+  if (timezoneCountry && PHONE_COUNTRIES.some((country) => country.code === timezoneCountry)) return timezoneCountry;
+
+  const localeCountry = navigator.language.split("-")[1]?.toUpperCase();
+  if (localeCountry && PHONE_COUNTRIES.some((country) => country.code === localeCountry)) return localeCountry;
+
+  return PHONE_COUNTRIES[0].code;
 }
 
 export function isValidPhone(value: string) {

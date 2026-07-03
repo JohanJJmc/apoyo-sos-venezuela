@@ -278,7 +278,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   if (view === "signup") {
     return (
-      <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+      <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
         <BackButton onClick={() => (onCancel ? onCancel() : goTo("login"))} label="Crear cuenta" />
         <p className="mt-10 text-[14px] font-semibold text-sos-ink">
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
@@ -325,7 +325,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   if (view === "forgotPassword") {
     return (
-      <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+      <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
         <BackButton onClick={() => goTo("login")} label="Recuperar contraseña" />
         <p className="mt-10 text-[15px] font-semibold leading-snug text-sos-muted">
           Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.
@@ -358,7 +358,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   if (view === "resetPassword") {
     return (
-      <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+      <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
         <img src="/assets/nexo-logo.svg" alt="NEXO" className="mx-auto h-16 w-16 rounded-[12px]" />
         <h1 className="mt-9 text-center text-[22px] font-extrabold">Nueva contraseña</h1>
         <p className="mt-4 text-center text-[15px] font-semibold leading-snug text-sos-muted">
@@ -398,7 +398,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
   if (view === "verify") {
     return (
-      <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+      <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
         <div className="flex items-center gap-4">
           <button type="button" onClick={() => goTo("signup")} className="grid h-10 w-10 place-items-center rounded-pill bg-sos-background text-sos-ink shadow-soft" aria-label="Volver">
             <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
@@ -437,7 +437,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-white px-7 pb-7 pt-20 text-sos-ink">
+    <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-20 text-sos-ink">
       <img src="/assets/nexo-logo.svg" alt="NEXO" className="mx-auto h-16 w-16 rounded-[12px]" />
       <p className="mt-8 text-center text-[14px] font-extrabold">Conecta. Ayuda. Responde.</p>
       {securityNotice && (
