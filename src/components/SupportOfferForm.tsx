@@ -5,6 +5,7 @@ import type { Coordinates, SupportReport } from "../types/request";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
 import { BackButton } from "./BackButton";
+import { PhoneInput } from "./PhoneInput";
 import { TurnstileWidget } from "./TurnstileWidget";
 
 interface SupportOfferFormProps {
@@ -103,12 +104,12 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
               onChange={(event) => setSupporterName(event.target.value)}
               placeholder="Nombre y apellido"
             />
-            <TextInput
+            <PhoneInput
               label=""
               value={anonymous ? "" : currentUserPhone || supporterPhone}
               disabled
-              onChange={(event) => setSupporterPhone(event.target.value)}
-              placeholder="📞 Telefono"
+              onChange={setSupporterPhone}
+              placeholder="Teléfono"
             />
             <label className="flex min-h-12 items-center gap-3 rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold text-sos-ink">
               <input

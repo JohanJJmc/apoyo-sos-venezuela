@@ -26,9 +26,11 @@ function maskPhone(phone?: string) {
   if (!phone) return "";
   const digits = phone.replace(/\D/g, "");
   const visibleDigits = digits.slice(-4);
+  const prefixMatch = phone.match(/^\s*(\+\d{1,4})/);
+  const prefix = prefixMatch?.[1] ?? "+";
 
-  if (!visibleDigits) return "Teléfono protegido";
-  return `Teléfono protegido •••• ${visibleDigits}`;
+  if (!visibleDigits) return `${prefix} ••••`;
+  return `${prefix} •••• ${visibleDigits}`;
 }
 
 export function RequestDetailModal({

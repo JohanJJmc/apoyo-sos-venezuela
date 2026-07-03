@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
-import { isValidFullName, isValidPhone, sanitizeName, sanitizePhone } from "../utils/validation";
+import { isValidFullName, isValidPhone, sanitizeName } from "../utils/validation";
+import { PhoneInput } from "./PhoneInput";
 import { TextInput } from "./TextInput";
 
 interface RequiredPhoneScreenProps {
@@ -59,12 +60,11 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
           placeholder="Nombre y apellido"
           autoComplete="name"
         />
-        <TextInput
+        <PhoneInput
           label="Teléfono"
           value={phone}
-          onChange={(event) => setPhone(sanitizePhone(event.target.value))}
+          onChange={setPhone}
           placeholder="Ingresa tu teléfono"
-          inputMode="tel"
           autoComplete="tel"
           error={error}
         />

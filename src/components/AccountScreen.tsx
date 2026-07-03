@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
-import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, sanitizePhone, validatePassword } from "../utils/validation";
+import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, validatePassword } from "../utils/validation";
 import { BackButton } from "./BackButton";
+import { PhoneInput } from "./PhoneInput";
 import { TextInput } from "./TextInput";
 
 interface AccountScreenProps {
@@ -103,7 +104,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
       <section className="mt-9 space-y-4">
         <TextInput label="Nombre y apellido" value={name} onChange={(event) => setName(sanitizeName(event.target.value))} placeholder="Nombre y apellido" autoComplete="off" />
         <TextInput label="Correo" value={email} onChange={(event) => setEmail(normalizeEmail(event.target.value))} placeholder="correo@ejemplo.com" inputMode="email" autoComplete="off" />
-        <TextInput label="Teléfono" value={phone} onChange={(event) => setPhone(sanitizePhone(event.target.value))} placeholder="Teléfono" inputMode="tel" autoComplete="off" />
+        <PhoneInput label="Teléfono" value={phone} onChange={setPhone} placeholder="Teléfono" autoComplete="off" />
 
         {profileMessage && <p className="rounded-input bg-sos-primarySoft p-3 text-[13px] font-extrabold text-sos-primary">{profileMessage}</p>}
 

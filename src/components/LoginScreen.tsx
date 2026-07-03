@@ -3,8 +3,9 @@ import { createAnonymousSession, type AppSession } from "../services/authSession
 import { authService } from "../services/authService";
 import { checkRateLimit } from "../services/rateLimitService";
 import { verifyTurnstileToken } from "../services/turnstileService";
-import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, sanitizePhone, validatePassword } from "../utils/validation";
+import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, validatePassword } from "../utils/validation";
 import { BackButton } from "./BackButton";
+import { PhoneInput } from "./PhoneInput";
 import { TurnstileWidget } from "./TurnstileWidget";
 
 interface LoginScreenProps {
@@ -285,7 +286,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
         <form className="mt-9 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(sanitizeName(event.target.value))} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
-          <input name="nexo_register_phone" value={signupPhone} onChange={(event) => setSignupPhone(sanitizePhone(event.target.value))} placeholder="Teléfono" inputMode="tel" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
+          <PhoneInput label="" value={signupPhone} onChange={setSignupPhone} placeholder="Teléfono" autoComplete="off" />
           <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(normalizeEmail(event.target.value))} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <PasswordField name="nexo_register_secret_one" value={signupPassword} onChange={setSignupPassword} placeholder="Ingresa tu contraseña" visible={showSignupPassword} onToggle={() => setShowSignupPassword((visible) => !visible)} autoComplete="new-password" />
           <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />

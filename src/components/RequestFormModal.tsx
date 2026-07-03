@@ -7,6 +7,7 @@ import { CategoryDropdown } from "./CategoryDropdown";
 import { PhotoUploader } from "./PhotoUploader";
 import { TextInput } from "./TextInput";
 import { BackButton } from "./BackButton";
+import { PhoneInput } from "./PhoneInput";
 import { TurnstileWidget } from "./TurnstileWidget";
 
 const FALLBACK_LOCATION: Coordinates = { latitude: 10.5, longitude: -66.9167 };
@@ -188,12 +189,12 @@ export function RequestFormModal({
               onChange={(event) => setRequesterName(event.target.value)}
               placeholder="Nombre y apellido"
             />
-            <TextInput
+            <PhoneInput
               label=""
               value={requesterAnonymous ? "" : currentUserPhone || requesterPhone}
               disabled
-              onChange={(event) => setRequesterPhone(event.target.value)}
-              placeholder="📞 Telefono"
+              onChange={setRequesterPhone}
+              placeholder="Teléfono"
             />
             <label className="flex min-h-12 items-center gap-3 rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold text-sos-ink">
               <input
