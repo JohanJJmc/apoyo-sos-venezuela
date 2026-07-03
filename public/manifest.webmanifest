@@ -1,11 +1,19 @@
 {
   "name": "NEXO",
   "short_name": "NEXO",
-  "description": "Solicitudes de apoyo de emergencia en un mapa.",
-  "start_url": "/",
+  "description": "NEXO permite publicar y apoyar solicitudes de emergencia cercanas de forma comunitaria.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "lang": "es",
+  "dir": "ltr",
   "display": "standalone",
-  "background_color": "#f7f9fc",
-  "theme_color": "#be001c",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#FAFAF7",
+  "theme_color": "#FF4A3D",
+  "categories": ["utilities", "social", "navigation"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/assets/nexo-app-icon.png",
@@ -18,12 +26,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
+    }
+  ],
+  "shortcuts": [
     {
-      "src": "/assets/nexo-logo.svg",
-      "sizes": "400x400",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "name": "Abrir mapa",
+      "short_name": "Mapa",
+      "description": "Ver solicitudes cercanas en el mapa.",
+      "url": "/?view=map",
+      "icons": [{ "src": "/assets/nexo-app-icon.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

@@ -1,9 +1,10 @@
-const CACHE_NAME = "nexo-v3";
+const CACHE_NAME = "nexo-v4";
 const ASSETS = [
   "/",
   "/manifest.webmanifest",
   "/icon.svg?v=2",
   "/assets/nexo-logo.svg",
+  "/assets/nexo-logo-lite.svg",
   "/assets/nexo-app-icon.png",
 ];
 
@@ -13,9 +14,9 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))),
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))).then(() => self.clients.claim()),
+    ),
   );
 });
 
