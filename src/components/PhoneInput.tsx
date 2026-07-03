@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   formatPhoneNumber,
   PHONE_COUNTRIES,
@@ -24,8 +25,30 @@ export function PhoneInput({
   disabled = false,
   autoComplete = "tel",
 }: PhoneInputProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef<HTMLSpanElement | null>(null);
   const splitValue = splitPhoneNumber(value);
   const selectedCountry = PHONE_COUNTRIES.find((country) => country.code === splitValue.countryCode) ?? PHONE_COUNTRIES[0];
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!pickerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   function updatePhone(countryCode: string, nationalNumber: string) {
     onChange(formatPhoneNumber(countryCode, nationalNumber));
@@ -35,24 +58,24 @@ export function PhoneInput({
     <label className="block">
       {label && <span className="mb-2 block text-[14px] font-extrabold text-sos-muted">{label}</span>}
       <div
-        className={`grid min-h-14 grid-cols-[112px_minmax(0,1fr)] overflow-hidden rounded-input border border-sos-border bg-sos-background ${
+        className={`grid min-h-14 grid-cols-[126px_minmax(0,1fr)] overflow-visible rounded-input border border-sos-border bg-sos-background ${
           disabled ? "opacity-70" : "focus-within:border-sos-orange"
         }`}
       >
-        <span className="relative border-r border-sos-border bg-white">
-          <select
-            value={splitValue.countryCode}
-            onChange={(event) => updatePhone(event.target.value, splitValue.nationalNumber)}
+        <span ref={pickerRef} className="relative border-r border-sos-border bg-white">
+          <button
+            type="button"
+            onClick={() => !disabled && setIsOpen((current) => !current)}
             disabled={disabled}
-            className="h-full w-full appearance-none bg-transparent py-0 pl-3 pr-7 text-[15px] font-extrabold text-sos-ink outline-none disabled:cursor-not-allowed"
+            className="flex h-full w-full items-center gap-2 bg-transparent py-0 pl-3 pr-7 text-left text-[15px] font-extrabold text-sos-ink outline-none disabled:cursor-not-allowed"
             aria-label="Prefijo del país"
+            aria-expanded={isOpen}
           >
-            {PHONE_COUNTRIES.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.flag} {country.dialCode}
-              </option>
-            ))}
-          </select>
+            <span className="text-[20px] leading-none" aria-hidden="true">
+              {selectedCountry.flag}
+            </span>
+            <span>{selectedCountry.dialCode}</span>
+          </button>
           <svg
             aria-hidden="true"
             className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-sos-muted"
@@ -61,6 +84,29 @@ export function PhoneInput({
           >
             <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
+          {isOpen && (
+            <div className="absolute left-0 top-[calc(100%+6px)] z-[1200] max-h-72 w-[260px] overflow-y-auto rounded-2xl border border-sos-border bg-white p-2 shadow-sos-card">
+              {PHONE_COUNTRIES.map((country) => (
+                <button
+                  key={country.code}
+                  type="button"
+                  onClick={() => {
+                    updatePhone(country.code, splitValue.nationalNumber);
+                    setIsOpen(false);
+                  }}
+                  className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-bold ${
+                    country.code === selectedCountry.code ? "bg-sos-primary-soft text-sos-ink" : "text-sos-ink hover:bg-sos-background"
+                  }`}
+                >
+                  <span className="text-[22px] leading-none" aria-hidden="true">
+                    {country.flag}
+                  </span>
+                  <span className="w-14 shrink-0">{country.dialCode}</span>
+                  <span className="min-w-0 truncate text-[13px] text-sos-muted">{country.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </span>
 
         <input
