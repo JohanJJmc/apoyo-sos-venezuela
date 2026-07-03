@@ -54,11 +54,15 @@ export function PhoneInput({
     onChange(formatPhoneNumber(countryCode, nationalNumber));
   }
 
+  function getFlagUrl(countryCode: string) {
+    return `https://flagcdn.com/${countryCode.toLowerCase()}.svg`;
+  }
+
   return (
     <label className="block">
       {label && <span className="mb-2 block text-[14px] font-extrabold text-sos-muted">{label}</span>}
       <div
-        className={`grid min-h-14 grid-cols-[126px_minmax(0,1fr)] overflow-visible rounded-input border border-sos-border bg-sos-background ${
+        className={`grid min-h-14 grid-cols-[142px_minmax(0,1fr)] overflow-visible rounded-input border border-sos-border bg-sos-background ${
           disabled ? "opacity-70" : "focus-within:border-sos-orange"
         }`}
       >
@@ -71,21 +75,29 @@ export function PhoneInput({
             aria-label="Prefijo del país"
             aria-expanded={isOpen}
           >
-            <span className="text-[20px] leading-none" aria-hidden="true">
-              {selectedCountry.flag}
+            <span className="flex h-9 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-sos-primary-soft">
+              <img
+                src={getFlagUrl(selectedCountry.code)}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
             </span>
-            <span>{selectedCountry.dialCode}</span>
+            <span className="text-[18px] font-extrabold text-sos-muted">{selectedCountry.dialCode}</span>
           </button>
           <svg
             aria-hidden="true"
-            className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-sos-muted"
+            className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-sos-ink"
             viewBox="0 0 24 24"
             fill="none"
           >
-            <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M7 9l5 5 5-5" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           {isOpen && (
-            <div className="absolute left-0 top-[calc(100%+6px)] z-[1200] max-h-72 w-[260px] overflow-y-auto rounded-2xl border border-sos-border bg-white p-2 shadow-sos-card">
+            <div className="absolute left-0 top-[calc(100%+6px)] z-[1200] max-h-72 w-[292px] overflow-y-auto rounded-2xl border border-sos-border bg-white p-2 shadow-sos-card">
               {PHONE_COUNTRIES.map((country) => (
                 <button
                   key={country.code}
@@ -98,8 +110,16 @@ export function PhoneInput({
                     country.code === selectedCountry.code ? "bg-sos-primary-soft text-sos-ink" : "text-sos-ink hover:bg-sos-background"
                   }`}
                 >
-                  <span className="text-[22px] leading-none" aria-hidden="true">
-                    {country.flag}
+                  <span className="flex h-8 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[9px] bg-sos-primary-soft">
+                    <img
+                      src={getFlagUrl(country.code)}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
                   </span>
                   <span className="w-14 shrink-0">{country.dialCode}</span>
                   <span className="min-w-0 truncate text-[13px] text-sos-muted">{country.name}</span>
