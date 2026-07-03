@@ -26,16 +26,10 @@ const MAP_LAYERS = {
     attribution: "Tiles &copy; Esri",
   },
 } as const;
-const SATELLITE_REFERENCE_LAYERS = [
-  {
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-    attribution: "Boundaries & labels &copy; Esri",
-  },
-  {
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
-    attribution: "Roads &copy; Esri",
-  },
-];
+const SATELLITE_LABEL_LAYER = {
+  url: "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+  attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+};
 
 export type MapLayerStyle = keyof typeof MAP_LAYERS;
 
@@ -89,7 +83,7 @@ export function MapScreen({
   const mapElement = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
   const tileLayer = useRef<L.TileLayer | null>(null);
-  const satelliteReferenceLayers = useRef<L.TileLayer[]>([]);
+  const satelliteLabelLayer = useRef<L.TileLayer | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
   const didCenterOnUser = useRef(false);
   const center = useMemo(() => userLocation ?? DEFAULT_CENTER, [userLocation]);
@@ -109,8 +103,8 @@ export function MapScreen({
     if (!map.current) return;
 
     tileLayer.current?.removeFrom(map.current);
-    satelliteReferenceLayers.current.forEach((referenceLayer) => referenceLayer.removeFrom(map.current!));
-    satelliteReferenceLayers.current = [];
+    satelliteLabelLayer.current?.removeFrom(map.current);
+    satelliteLabelLayer.current = null;
 
     const layer = MAP_LAYERS[mapLayerStyle];
     tileLayer.current = L.tileLayer(layer.url, {
@@ -119,13 +113,12 @@ export function MapScreen({
     }).addTo(map.current);
 
     if (mapLayerStyle === "satellite") {
-      satelliteReferenceLayers.current = SATELLITE_REFERENCE_LAYERS.map((referenceLayer) =>
-        L.tileLayer(referenceLayer.url, {
-          attribution: referenceLayer.attribution,
-          maxZoom: 19,
-          opacity: 0.95,
-        }).addTo(map.current!),
-      );
+      satelliteLabelLayer.current = L.tileLayer(SATELLITE_LABEL_LAYER.url, {
+        attribution: SATELLITE_LABEL_LAYER.attribution,
+        maxZoom: 20,
+        opacity: 0.95,
+        subdomains: "abcd",
+      }).addTo(map.current);
     }
   }, [mapLayerStyle]);
 
