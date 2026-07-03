@@ -26,6 +26,16 @@ const MAP_LAYERS = {
     attribution: "Tiles &copy; Esri",
   },
 } as const;
+const SATELLITE_REFERENCE_LAYERS = [
+  {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Boundaries & labels &copy; Esri",
+  },
+  {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Roads &copy; Esri",
+  },
+];
 
 export type MapLayerStyle = keyof typeof MAP_LAYERS;
 
@@ -79,6 +89,7 @@ export function MapScreen({
   const mapElement = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
   const tileLayer = useRef<L.TileLayer | null>(null);
+  const satelliteReferenceLayers = useRef<L.TileLayer[]>([]);
   const markers = useRef<L.LayerGroup | null>(null);
   const didCenterOnUser = useRef(false);
   const center = useMemo(() => userLocation ?? DEFAULT_CENTER, [userLocation]);
@@ -98,11 +109,24 @@ export function MapScreen({
     if (!map.current) return;
 
     tileLayer.current?.removeFrom(map.current);
+    satelliteReferenceLayers.current.forEach((referenceLayer) => referenceLayer.removeFrom(map.current!));
+    satelliteReferenceLayers.current = [];
+
     const layer = MAP_LAYERS[mapLayerStyle];
     tileLayer.current = L.tileLayer(layer.url, {
       attribution: layer.attribution,
       maxZoom: 19,
     }).addTo(map.current);
+
+    if (mapLayerStyle === "satellite") {
+      satelliteReferenceLayers.current = SATELLITE_REFERENCE_LAYERS.map((referenceLayer) =>
+        L.tileLayer(referenceLayer.url, {
+          attribution: referenceLayer.attribution,
+          maxZoom: 19,
+          opacity: 0.95,
+        }).addTo(map.current!),
+      );
+    }
   }, [mapLayerStyle]);
 
   useEffect(() => {
