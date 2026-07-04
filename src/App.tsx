@@ -106,6 +106,25 @@ function RequestListGroup({
 }
 
 const SPLASH_MIN_DURATION_MS = 1700;
+const LAST_LOCATION_KEY = "nexo-last-user-location";
+const LAST_LOCATION_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+function readStoredLocation(): Coordinates | undefined {
+  try {
+    const rawLocation = window.localStorage.getItem(LAST_LOCATION_KEY);
+    if (!rawLocation) return undefined;
+    const parsed = JSON.parse(rawLocation) as Partial<Coordinates> & { savedAt?: number };
+    if (typeof parsed.latitude !== "number" || typeof parsed.longitude !== "number") return undefined;
+    if (typeof parsed.savedAt !== "number" || Date.now() - parsed.savedAt > LAST_LOCATION_MAX_AGE_MS) return undefined;
+    return { latitude: parsed.latitude, longitude: parsed.longitude };
+  } catch {
+    return undefined;
+  }
+}
+
+function storeLastLocation(location: Coordinates) {
+  window.localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify({ ...location, savedAt: Date.now() }));
+}
 
 function App() {
   const [session, setSession] = useState<AppSession | null>(() => getStoredSession());
@@ -113,7 +132,8 @@ function App() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [filters, setFilters] = useState<Filters>({ showPending: true, showResolved: false, category: "Todas" });
   const [activeView, setActiveView] = useState<AppView>("map");
-  const [userLocation, setUserLocation] = useState<Coordinates>();
+  const [userLocation, setUserLocation] = useState<Coordinates | undefined>(() => readStoredLocation());
+  const [hasLocationAttemptFinished, setHasLocationAttemptFinished] = useState(() => Boolean(readStoredLocation()));
   const [manualLocation, setManualLocation] = useState<Coordinates>();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [authRequiredForRequest, setAuthRequiredForRequest] = useState(false);
@@ -394,35 +414,40 @@ function App() {
   }, []);
 
   const requestCurrentLocation = useCallback((options: { recenter?: boolean; reverse?: boolean } = {}) => {
+    setLocationMessage("Solicitando ubicacion GPS...");
     if (!navigator.geolocation) {
+      setHasLocationAttemptFinished(true);
       setLocationMessage("GPS no disponible. Puedes ajustar la ubicacion manualmente.");
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-      const nextLocation = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      };
-      setUserLocation(nextLocation);
-      setLocationMessage("Ubicacion detectada.");
+        const nextLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setUserLocation(nextLocation);
+        storeLastLocation(nextLocation);
+        setHasLocationAttemptFinished(true);
+        setLocationMessage("Ubicacion detectada.");
         if (options.reverse !== false) void reverseGeocode(nextLocation);
         if (options.recenter) setRecenterSignal((value) => value + 1);
       },
       () => {
+        setHasLocationAttemptFinished(true);
         setLocationMessage("No se pudo acceder al GPS. Puedes seleccionar ubicacion manualmente.");
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 30000,
+        timeout: 30000,
+        maximumAge: 0,
       },
     );
   }, []);
 
   useEffect(() => {
-    requestCurrentLocation();
+    requestCurrentLocation({ recenter: true });
   }, [requestCurrentLocation]);
 
   useEffect(() => {
@@ -1093,17 +1118,27 @@ function App() {
 
       {activeView === "map" && (
         <section className={`absolute inset-x-0 bottom-0 ${contentTopClass}`}>
-          <MapScreen
-            requests={visibleRequests}
-            userLocation={userLocation}
-            pickingLocation={pickingLocation}
-            recenterSignal={recenterSignal}
-            mapLayerStyle={mapLayerStyle}
-            onSelectRequest={setSelectedRequest}
-            onCenterChange={handleMapCenterChange}
-            onManualLocationPreview={previewManualLocation}
-          />
-          {!pickingLocation && (
+          {!userLocation && !hasLocationAttemptFinished ? (
+            <div className="flex h-full w-full flex-col items-center justify-center bg-[#CFE8FF] px-8 text-center text-sos-ink">
+              <div className="grid h-14 w-14 place-items-center rounded-pill bg-white text-[28px] shadow-soft">◎</div>
+              <p className="mt-5 text-[18px] font-extrabold">Buscando tu ubicación</p>
+              <p className="mt-2 max-w-xs text-[14px] font-bold leading-snug text-sos-muted">
+                Permite el acceso al GPS para abrir el mapa exactamente donde estás.
+              </p>
+            </div>
+          ) : (
+            <MapScreen
+              requests={visibleRequests}
+              userLocation={userLocation}
+              pickingLocation={pickingLocation}
+              recenterSignal={recenterSignal}
+              mapLayerStyle={mapLayerStyle}
+              onSelectRequest={setSelectedRequest}
+              onCenterChange={handleMapCenterChange}
+              onManualLocationPreview={previewManualLocation}
+            />
+          )}
+          {!pickingLocation && (userLocation || hasLocationAttemptFinished) && (
             <div ref={mapFilterActionsRef} className="fixed right-4 top-1/2 z-[910] flex -translate-y-1/2 flex-col gap-3">
               <div className="relative">
                 <button
@@ -1198,12 +1233,12 @@ function App() {
               </button>
             </div>
           )}
-          {isMapFilterOpen && !pickingLocation && (
+          {isMapFilterOpen && !pickingLocation && (userLocation || hasLocationAttemptFinished) && (
             <div ref={mapFilterPanelRef} className="absolute left-4 right-20 top-4 z-[910]">
               <FilterChips filters={filters} onChange={setFilters} placement="static" />
             </div>
           )}
-          {!pickingLocation && (
+          {!pickingLocation && (userLocation || hasLocationAttemptFinished) && (
             <HomeActionPanel
               locationReady={Boolean(mapCenterLocation || userLocation || manualLocation)}
               address={mapCenterAddress}
