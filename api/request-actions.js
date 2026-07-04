@@ -290,12 +290,25 @@ async function confirmSupport(supabase, request, user) {
     .eq("id", latestReport.id)
     .select("id, supporter_id")
     .single();
-  if (updateReportError) throw updateReportError;
 
-  if (status === "confirmed" && updatedReport?.supporter_id) {
+  let finalUpdatedReport = updatedReport;
+  if (updateReportError?.message?.includes("partial_note")) {
+    const { data: fallbackReport, error: fallbackReportError } = await supabase
+      .from("support_reports")
+      .update({ status })
+      .eq("id", latestReport.id)
+      .select("id, supporter_id")
+      .single();
+    if (fallbackReportError) throw fallbackReportError;
+    finalUpdatedReport = fallbackReport;
+  } else if (updateReportError) {
+    throw updateReportError;
+  }
+
+  if (status === "confirmed" && finalUpdatedReport?.supporter_id) {
     await sendPushToUser(
       supabase,
-      updatedReport.supporter_id,
+      finalUpdatedReport.supporter_id,
       pushPayload(
         "Tu apoyo fue aprobado",
         `Confirmaron que tu apoyo para ${requestRow.item || requestRow.category} fue recibido.`,

@@ -74,8 +74,17 @@ export function RequestDetailModal({
       : maskPhone(request.requesterPhone)
     : "";
   const requesterContact = [requesterName, requesterPhone].filter(Boolean).join(" - ");
-  const activeSupport = [...request.supportReports].reverse().find((report) => report.status === "pending_confirmation");
   const timelineReports = request.supportReports.filter((report) => report.status === "partial" || report.status === "confirmed");
+  const latestTimelineTime = timelineReports.reduce(
+    (latest, report) => Math.max(latest, new Date(report.createdAt).getTime()),
+    0,
+  );
+  const activeSupport = [...request.supportReports].reverse().find((report) => {
+    if (report.status !== "pending_confirmation") return false;
+    if (!request.partialSupport) return true;
+    if (!timelineReports.length) return false;
+    return new Date(report.createdAt).getTime() > latestTimelineTime;
+  });
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
