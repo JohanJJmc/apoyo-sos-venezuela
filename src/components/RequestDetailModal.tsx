@@ -33,6 +33,23 @@ function maskPhone(phone?: string) {
   return `${prefix} •••• ${visibleDigits}`;
 }
 
+function clockTime(isoDate: string) {
+  return new Intl.DateTimeFormat("es", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(isoDate));
+}
+
+function shortElapsed(isoDate: string) {
+  return timeAgo(isoDate)
+    .replace("hace ", "")
+    .replace(" minuto", " min")
+    .replace(" minutos", " min")
+    .replace(" hora", " hr")
+    .replace(" horas", " hrs")
+    .replace("mas", "más");
+}
+
 export function RequestDetailModal({
   request,
   currentUserId,
@@ -58,6 +75,8 @@ export function RequestDetailModal({
       : maskPhone(request.requesterPhone)
     : "";
   const requesterContact = [requesterName, requesterPhone].filter(Boolean).join(" - ");
+  const partialReport = [...request.supportReports].reverse().find((report) => report.status === "partial");
+  const partialTime = partialReport?.createdAt ?? request.createdAt;
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
@@ -77,17 +96,41 @@ export function RequestDetailModal({
           <StatusBadge status={request.status} partialSupport={request.partialSupport} />
         </div>
 
-        <div className="mt-8 border-t border-sos-border pt-4">
-          <p className="text-[13px] font-semibold text-sos-muted">Publicada: {timeAgo(request.createdAt)}</p>
-        </div>
+        <section className="mt-8 border-t border-sos-border pt-4">
+          <div className="relative space-y-4 pl-5">
+            <span className="absolute bottom-2 left-[4px] top-4 border-l border-dashed border-sos-muted" />
 
-        {request.description && <p className="mt-4 text-[16px] font-semibold text-sos-muted">{request.description}</p>}
-        {request.partialSupportNote && request.status === "pending" && (
-          <section className="mt-4 rounded-input border border-sos-partial bg-sos-partialSoft p-4">
-            <p className="text-[14px] font-extrabold uppercase text-sos-partial">Ayuda parcial recibida</p>
-            <p className="mt-2 text-[16px] font-bold text-sos-ink">Falta: {request.partialSupportNote}</p>
-          </section>
-        )}
+            <article className="relative">
+              <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-sos-muted" />
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-[13px] font-extrabold text-sos-muted">Publicada: {shortElapsed(request.createdAt)}</p>
+                <p className="text-[13px] font-extrabold text-sos-muted">{clockTime(request.createdAt)}</p>
+              </div>
+              {request.description && (
+                <div className="rounded-card bg-sos-background px-4 py-3">
+                  <p className="text-[13px] font-extrabold text-sos-muted">Detalle Solicitud</p>
+                  <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{request.description}</p>
+                </div>
+              )}
+            </article>
+
+            {request.partialSupportNote && request.status === "pending" && (
+              <article className="relative">
+                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-sos-muted" />
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#C25700]">
+                    Ayuda parcial <span className="text-[20px] leading-none">›</span>
+                  </p>
+                  <p className="text-[13px] font-extrabold text-[#C25700]">{clockTime(partialTime)}</p>
+                </div>
+                <div className="rounded-card bg-sos-partialSoft px-4 py-3">
+                  <p className="text-[13px] font-extrabold text-[#C25700]">Que hace falta</p>
+                  <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{request.partialSupportNote}</p>
+                </div>
+              </article>
+            )}
+          </div>
+        </section>
         {request.photoUrl && <img src={request.photoUrl} alt="Foto de la solicitud" className="mt-4 max-h-52 w-full rounded-card object-cover" />}
 
         <div className="flex-1" />
