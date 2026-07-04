@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { pushPayload, sendPushToUser } from "./_push.js";
 
 const MAX_AREA_REQUESTS_RADIUS_METERS = 70;
 const MAX_PENDING_REQUESTS_PER_CATEGORY_ITEM_RADIUS = 20;
@@ -184,7 +185,7 @@ async function offerSupport(supabase, request, user) {
 
   const { data: requestRow, error: requestError } = await supabase
     .from("requests")
-    .select("id, status")
+    .select("id, status, category, item, created_by")
     .eq("id", requestId)
     .single();
 
@@ -208,6 +209,17 @@ async function offerSupport(supabase, request, user) {
 
   const { data, error } = await supabase.from("support_reports").insert(payload).select("*").single();
   if (error) throw error;
+
+  await sendPushToUser(
+    supabase,
+    requestRow.created_by,
+    pushPayload(
+      "Alguien ofreció apoyo",
+      `Tu solicitud de ${requestRow.item || requestRow.category} tiene un apoyo pendiente de confirmación.`,
+      "/",
+    ),
+  );
+
   return data;
 }
 
@@ -220,7 +232,7 @@ async function confirmSupport(supabase, request, user) {
 
   const { data: requestRow, error: requestError } = await supabase
     .from("requests")
-    .select("id, created_by")
+    .select("id, created_by, category, item")
     .eq("id", requestId)
     .single();
 
@@ -248,8 +260,25 @@ async function confirmSupport(supabase, request, user) {
   if (reportListError) throw reportListError;
   const latestReport = latestReports?.[0];
   if (latestReport) {
-    const { error: updateReportError } = await supabase.from("support_reports").update({ status }).eq("id", latestReport.id);
+    const { data: updatedReport, error: updateReportError } = await supabase
+      .from("support_reports")
+      .update({ status })
+      .eq("id", latestReport.id)
+      .select("id, supporter_id")
+      .single();
     if (updateReportError) throw updateReportError;
+
+    if (status === "confirmed" && updatedReport?.supporter_id) {
+      await sendPushToUser(
+        supabase,
+        updatedReport.supporter_id,
+        pushPayload(
+          "Tu apoyo fue aprobado",
+          `Confirmaron que tu apoyo para ${requestRow.item || requestRow.category} fue recibido.`,
+          "/",
+        ),
+      );
+    }
   }
 
   return { ok: true };

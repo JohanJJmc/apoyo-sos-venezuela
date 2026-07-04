@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
+import { pushNotificationService } from "../services/pushNotificationService";
 import { isValidEmail, isValidFullName, isValidPhone, normalizeEmail, sanitizeName, validatePassword } from "../utils/validation";
 import { BackButton } from "./BackButton";
 import { PhoneInput } from "./PhoneInput";
@@ -32,6 +33,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
   const [error, setError] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
 
   async function saveProfile() {
     setError("");
@@ -97,6 +99,21 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
     }
   }
 
+  async function enablePushNotifications() {
+    setError("");
+    setIsEnablingPush(true);
+    try {
+      await pushNotificationService.enable();
+      onNotify?.("Notificaciones activadas correctamente.", "success");
+    } catch (nextError) {
+      const message = accountErrorMessage(nextError, "No se pudieron activar las notificaciones.");
+      setError(message);
+      onNotify?.(message, "danger");
+    } finally {
+      setIsEnablingPush(false);
+    }
+  }
+
   return (
     <main className="nexo-form-screen min-h-dvh bg-white px-7 pb-7 pt-16 text-sos-ink">
       <BackButton onClick={onBack} label="Mi cuenta" />
@@ -115,6 +132,21 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
           className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
         >
           Guardar información
+        </button>
+      </section>
+
+      <section className="mt-10 space-y-4 border-t border-sos-border pt-8">
+        <h2 className="text-[20px] font-extrabold">Notificaciones</h2>
+        <p className="text-[14px] font-semibold text-sos-muted">
+          Recibe avisos cuando alguien ofrezca apoyo, cuando tu apoyo sea aprobado o cuando expire.
+        </p>
+        <button
+          type="button"
+          disabled={isEnablingPush || !pushNotificationService.isSupported()}
+          onClick={enablePushNotifications}
+          className="min-h-14 w-full rounded-pill border border-sos-border px-5 text-[16px] font-extrabold text-sos-ink shadow-soft disabled:opacity-50"
+        >
+          {isEnablingPush ? "Activando..." : "Activar notificaciones"}
         </button>
       </section>
 

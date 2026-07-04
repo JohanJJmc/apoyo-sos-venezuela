@@ -152,13 +152,17 @@ async function listSupabaseRequests() {
 
 async function expirePendingSupportReports() {
   if (!supabase) return;
-  const expiresBefore = new Date(Date.now() - SUPPORT_CONFIRMATION_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString();
-  const { error } = await supabase
-    .from("support_reports")
-    .update({ status: "expired" })
-    .eq("status", "pending_confirmation")
-    .lt("created_at", expiresBefore);
-  if (error) throw error;
+  try {
+    await fetch("/api/expire-supports", { method: "POST" });
+  } catch {
+    const expiresBefore = new Date(Date.now() - SUPPORT_CONFIRMATION_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from("support_reports")
+      .update({ status: "expired" })
+      .eq("status", "pending_confirmation")
+      .lt("created_at", expiresBefore);
+    if (error) throw error;
+  }
 }
 
 export const requestService = {
