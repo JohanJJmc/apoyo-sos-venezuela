@@ -823,12 +823,12 @@ function App() {
     }
   }
 
-  async function confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string) {
+  async function confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) {
     try {
       if (status === "partial") {
         await validateSafeContent("request", { partialNote });
       }
-      await requestService.confirmSupport(requestId, status, partialNote);
+      await requestService.confirmSupport(requestId, status, partialNote, supportReportId);
       await reloadRequests();
       showToast(status === "confirmed" ? "Solicitud aprobada como atendida." : "Ayuda parcial registrada.", "success");
     } catch (nextError) {

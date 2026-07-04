@@ -194,11 +194,13 @@ export const localRequestStore = {
     return report;
   },
 
-  confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string) {
+  confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) {
     const requests = read();
     write(
       requests.map((request) => {
         if (request.id !== requestId) return request;
+        const fallbackReportId = [...request.supportReports].reverse().find((report) => report.status === "pending_confirmation")?.id;
+        const targetReportId = supportReportId || fallbackReportId;
         return {
           ...request,
           status: status === "confirmed" ? "resolved" : "pending",
@@ -206,8 +208,8 @@ export const localRequestStore = {
           partialSupportNote:
             status === "partial" && partialNote ? appendPartialNote(request.partialSupportNote, partialNote) : request.partialSupportNote,
           resolvedAt: status === "confirmed" ? now() : undefined,
-          supportReports: request.supportReports.map((report, index) => {
-            if (index !== request.supportReports.length - 1) return report;
+          supportReports: request.supportReports.map((report) => {
+            if (report.id !== targetReportId) return report;
             return {
               ...report,
               status,

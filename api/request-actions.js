@@ -235,6 +235,7 @@ async function confirmSupport(supabase, request, user) {
   const requestId = requireText(request.body?.requestId, "La solicitud");
   const status = requireText(request.body?.status, "El estado");
   const partialNote = optionalText(request.body?.partialNote);
+  const supportReportId = optionalText(request.body?.supportReportId);
   if (!["confirmed", "partial", "rejected"].includes(status)) {
     throw Object.assign(new Error("Estado de apoyo no válido."), { statusCode: 400 });
   }
@@ -253,6 +254,26 @@ async function confirmSupport(supabase, request, user) {
     throw Object.assign(new Error("Solo quien creó la solicitud puede confirmar el apoyo."), { statusCode: 403 });
   }
 
+  let supportReportQuery = supabase
+    .from("support_reports")
+    .select("id")
+    .eq("request_id", requestId)
+    .eq("status", "pending_confirmation");
+
+  if (supportReportId) {
+    supportReportQuery = supportReportQuery.eq("id", supportReportId);
+  } else {
+    supportReportQuery = supportReportQuery.order("created_at", { ascending: false }).limit(1);
+  }
+
+  const { data: latestReports, error: reportListError } = await supportReportQuery;
+
+  if (reportListError) throw reportListError;
+  const latestReport = latestReports?.[0];
+  if (!latestReport) {
+    throw Object.assign(new Error("No hay un apoyo pendiente para confirmar."), { statusCode: 409 });
+  }
+
   const requestUpdates = {
     status: status === "confirmed" ? "resolved" : "pending",
     partial_support: status === "partial",
@@ -263,37 +284,25 @@ async function confirmSupport(supabase, request, user) {
   const { error: updateRequestError } = await supabase.from("requests").update(requestUpdates).eq("id", requestId);
   if (updateRequestError) throw updateRequestError;
 
-  const { data: latestReports, error: reportListError } = await supabase
+  const { data: updatedReport, error: updateReportError } = await supabase
     .from("support_reports")
-    .select("id")
-    .eq("request_id", requestId)
-    .eq("status", "pending_confirmation")
-    .order("created_at", { ascending: false })
-    .limit(1);
+    .update({ status, partial_note: status === "partial" ? partialNote : null })
+    .eq("id", latestReport.id)
+    .select("id, supporter_id")
+    .single();
+  if (updateReportError) throw updateReportError;
 
-  if (reportListError) throw reportListError;
-  const latestReport = latestReports?.[0];
-  if (latestReport) {
-    const { data: updatedReport, error: updateReportError } = await supabase
-      .from("support_reports")
-      .update({ status, partial_note: status === "partial" ? partialNote : null })
-      .eq("id", latestReport.id)
-      .select("id, supporter_id")
-      .single();
-    if (updateReportError) throw updateReportError;
-
-    if (status === "confirmed" && updatedReport?.supporter_id) {
-      await sendPushToUser(
-        supabase,
-        updatedReport.supporter_id,
-        pushPayload(
-          "Tu apoyo fue aprobado",
-          `Confirmaron que tu apoyo para ${requestRow.item || requestRow.category} fue recibido.`,
-          "/",
-          { category: requestRow.category },
-        ),
-      );
-    }
+  if (status === "confirmed" && updatedReport?.supporter_id) {
+    await sendPushToUser(
+      supabase,
+      updatedReport.supporter_id,
+      pushPayload(
+        "Tu apoyo fue aprobado",
+        `Confirmaron que tu apoyo para ${requestRow.item || requestRow.category} fue recibido.`,
+        "/",
+        { category: requestRow.category },
+      ),
+    );
   }
 
   return { ok: true };

@@ -10,7 +10,7 @@ interface RequestDetailModalProps {
   currentUserId: string;
   onClose: () => void;
   onOfferSupport: (requestId: string) => void;
-  onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string) => void;
+  onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) => void;
   onCancelRequest: (requestId: string) => void;
 }
 
@@ -67,7 +67,6 @@ export function RequestDetailModal({
   const currentUserSupport = request.supportReports.find((report) => report.supporterId === currentUserId);
   const canSeeRequesterPhone = isOwner || Boolean(currentUserSupport);
   const pendingSupport = request.supportReports.some((report) => report.status === "pending_confirmation");
-  const latestSupport = request.supportReports[request.supportReports.length - 1];
   const requesterName = request.requesterAnonymous ? "Anonimo" : request.requesterName;
   const requesterPhone = request.requesterPhone
     ? canSeeRequesterPhone
@@ -76,8 +75,7 @@ export function RequestDetailModal({
     : "";
   const requesterContact = [requesterName, requesterPhone].filter(Boolean).join(" - ");
   const activeSupport = [...request.supportReports].reverse().find((report) => report.status === "pending_confirmation");
-  const partialReports = request.supportReports.filter((report) => report.status === "partial");
-  const partialEvents = partialReports.length ? partialReports : request.partialSupportNote ? [null] : [];
+  const timelineReports = request.supportReports.filter((report) => report.status === "partial" || report.status === "confirmed");
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
@@ -115,30 +113,38 @@ export function RequestDetailModal({
               )}
             </article>
 
-            {partialEvents.map((partialReport, index) => {
-              const partialTime = partialReport?.createdAt ?? request.createdAt;
-              const note = partialReport?.partialNote || request.partialSupportNote || "Ayuda parcial recibida.";
-              const PartialWrapper = partialReport ? "button" : "article";
+            {timelineReports.map((supportReport) => {
+              const isPartial = supportReport.status === "partial";
+              const eventColor = isPartial ? "#C25700" : "#008A3D";
+              const eventBg = isPartial ? "bg-sos-partialSoft" : "bg-sos-resolvedSoft";
+              const supportDetails = supportReport.details || "Apoyo ofrecido sin descripción.";
+              const missingDetails = supportReport.partialNote || request.partialSupportNote || "Pendiente por especificar.";
 
               return (
-              <PartialWrapper
-                key={partialReport?.id ?? `partial-note-${index}`}
-                type={partialReport ? "button" : undefined}
-                onClick={partialReport ? () => setSelectedSupport(partialReport) : undefined}
-                className={`relative block w-full text-left ${partialReport ? "active:scale-[0.99]" : ""}`}
+              <button
+                key={supportReport.id}
+                type="button"
+                onClick={() => setSelectedSupport(supportReport)}
+                className="relative block w-full text-left active:scale-[0.99]"
               >
-                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-sos-muted" />
+                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full" style={{ backgroundColor: eventColor }} />
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#C25700]">
-                    Ayuda parcial <span className="text-[20px] leading-none">›</span>
+                  <p className="inline-flex items-center gap-1 text-[14px] font-extrabold" style={{ color: eventColor }}>
+                    {isPartial ? "Ayuda parcial" : "Ayuda Completa"} <span className="text-[20px] leading-none">›</span>
                   </p>
-                  <p className="text-[13px] font-extrabold text-[#C25700]">{clockTime(partialTime)}</p>
+                  <p className="text-[13px] font-extrabold" style={{ color: eventColor }}>{clockTime(supportReport.createdAt)}</p>
                 </div>
-                <div className="rounded-card bg-sos-partialSoft px-4 py-3">
-                  <p className="text-[13px] font-extrabold text-[#C25700]">Que hace falta</p>
-                  <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{note}</p>
+                <div className={`rounded-card px-4 py-3 ${eventBg}`}>
+                  <p className="text-[13px] font-extrabold" style={{ color: eventColor }}>Detalle apoyo</p>
+                  <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{supportDetails}</p>
                 </div>
-              </PartialWrapper>
+                {isPartial && (
+                  <div className="mt-3 rounded-card bg-sos-background px-4 py-3">
+                    <p className="text-[13px] font-extrabold text-sos-muted">¿Qué falta?</p>
+                    <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{missingDetails}</p>
+                  </div>
+                )}
+              </button>
               );
             })}
           </div>
@@ -147,7 +153,7 @@ export function RequestDetailModal({
 
         <div className="flex-1" />
 
-        {activeSupport && (
+        {isOwner && activeSupport && (
           <button type="button" onClick={() => setSelectedSupport(activeSupport)} className="mb-7 w-full rounded-input bg-sos-resolvedSoft p-4 text-left">
             <div className="flex items-center justify-between">
               <div>
@@ -169,32 +175,13 @@ export function RequestDetailModal({
 
         <div className="space-y-3">
           {isOwner && request.status !== "resolved" ? (
-            <>
-                <button
-                  type="button"
-                  onClick={() => onConfirmSupport(request.id, "confirmed")}
-                  className="min-h-14 w-full rounded-pill bg-[#00A651] px-4 text-[16px] font-extrabold text-white"
-                >
-                  Si, fue atendida
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPartialNote("");
-                    setIsPartialNoteOpen(true);
-                  }}
-                  className="min-h-12 w-full rounded-pill border border-sos-muted px-4 text-[15px] font-extrabold text-sos-muted"
-                >
-                  Recibi ayuda parcial
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onCancelRequest(request.id)}
-                  className="min-h-12 w-full rounded-pill bg-sos-background px-4 text-[15px] font-extrabold text-sos-muted"
-                >
-                  Cancelar pedido
-                </button>
-            </>
+            <button
+              type="button"
+              onClick={() => onCancelRequest(request.id)}
+              className="min-h-12 w-full rounded-pill bg-sos-background px-4 text-[15px] font-extrabold text-sos-muted"
+            >
+              Cancelar pedido
+            </button>
           ) : isOwner && request.status === "resolved" ? (
             <p className="rounded-input bg-sos-resolvedSoft px-4 py-3 text-center text-[15px] font-extrabold text-sos-resolved">
               Esta solicitud ya fue atendida.
@@ -247,6 +234,31 @@ export function RequestDetailModal({
                   <img src={selectedSupport.photoUrl} alt="Foto del apoyo" className="max-h-80 w-full rounded-card object-cover" />
                 </div>
               )}
+
+              {isOwner && request.status !== "resolved" && selectedSupport.status === "pending_confirmation" && (
+                <div className="fixed inset-x-7 bottom-7 space-y-3 bg-white pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onConfirmSupport(request.id, "confirmed", undefined, selectedSupport.id);
+                      setSelectedSupport(null);
+                    }}
+                    className="min-h-14 w-full rounded-pill bg-[#00A651] px-4 text-[16px] font-extrabold text-white"
+                  >
+                    Solicitud completada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPartialNote("");
+                      setIsPartialNoteOpen(true);
+                    }}
+                    className="min-h-12 w-full rounded-pill border border-sos-muted px-4 text-[15px] font-extrabold text-sos-muted"
+                  >
+                    Apoyo parcial
+                  </button>
+                </div>
+              )}
             </section>
           </div>
         )}
@@ -268,8 +280,9 @@ export function RequestDetailModal({
                 type="button"
                 disabled={!partialNote.trim()}
                 onClick={() => {
-                  onConfirmSupport(request.id, "partial", partialNote.trim());
+                  onConfirmSupport(request.id, "partial", partialNote.trim(), selectedSupport?.id);
                   setIsPartialNoteOpen(false);
+                  setSelectedSupport(null);
                 }}
                 className="mt-5 min-h-14 w-full rounded-pill bg-sos-partial px-5 text-[16px] font-extrabold text-white disabled:bg-sos-border"
               >

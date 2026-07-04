@@ -239,10 +239,10 @@ export const requestService = {
     return { ...report, photoUrl: await signedPhotoUrl(report.photoUrl) };
   },
 
-  async confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string) {
-    if (!supabase) return localRequestStore.confirmSupport(requestId, status, partialNote);
+  async confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) {
+    if (!supabase) return localRequestStore.confirmSupport(requestId, status, partialNote, supportReportId);
 
-    await requestAction({ action: "confirm_support", requestId, status, partialNote });
+    await requestAction({ action: "confirm_support", requestId, status, partialNote, supportReportId });
   },
 
   async cancelRequest(requestId: string) {
