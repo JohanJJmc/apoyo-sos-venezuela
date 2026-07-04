@@ -65,7 +65,9 @@ export default async function handler(request, response) {
           sendPushToUser(
             supabase,
             report.supporter_id,
-            pushPayload("Tu apoyo expiró", `El apoyo ofrecido para ${label} expiró porque no fue confirmado.`, "/"),
+            pushPayload("Tu apoyo expiró", `El apoyo ofrecido para ${label} expiró porque no fue confirmado.`, "/", {
+              category: requestRow?.category,
+            }),
           ),
         ];
 
@@ -74,7 +76,9 @@ export default async function handler(request, response) {
             sendPushToUser(
               supabase,
               requestRow.created_by,
-              pushPayload("Un apoyo expiró", `Un apoyo ofrecido para ${label} expiró sin confirmación.`, "/"),
+              pushPayload("Un apoyo expiró", `Un apoyo ofrecido para ${label} expiró sin confirmación.`, "/", {
+                category: requestRow.category,
+              }),
             ),
           );
         }

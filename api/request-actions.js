@@ -217,6 +217,7 @@ async function offerSupport(supabase, request, user) {
       "Alguien ofreció apoyo",
       `Tu solicitud de ${requestRow.item || requestRow.category} tiene un apoyo pendiente de confirmación.`,
       "/",
+      { category: requestRow.category },
     ),
   );
 
@@ -276,6 +277,7 @@ async function confirmSupport(supabase, request, user) {
           "Tu apoyo fue aprobado",
           `Confirmaron que tu apoyo para ${requestRow.item || requestRow.category} fue recibido.`,
           "/",
+          { category: requestRow.category },
         ),
       );
     }

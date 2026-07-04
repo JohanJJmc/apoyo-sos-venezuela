@@ -33,12 +33,16 @@ export async function sendPushToUser(supabase, userId, payload) {
   );
 }
 
-export function pushPayload(title, body, url = "/") {
+export function pushPayload(title, body, url = "/", options = {}) {
+  const categoryIcon = options.category
+    ? `/api/category-icon?category=${encodeURIComponent(options.category)}`
+    : "/assets/nexo-app-icon.png";
+
   return {
     title,
     body,
     url,
-    icon: "/assets/nexo-app-icon.png",
+    icon: categoryIcon,
     badge: "/assets/nexo-notification-badge.svg",
   };
 }
