@@ -75,8 +75,8 @@ export function RequestDetailModal({
       : maskPhone(request.requesterPhone)
     : "";
   const requesterContact = [requesterName, requesterPhone].filter(Boolean).join(" - ");
-  const partialReport = [...request.supportReports].reverse().find((report) => report.status === "partial");
-  const partialTime = partialReport?.createdAt ?? request.createdAt;
+  const partialReports = request.supportReports.filter((report) => report.status === "partial");
+  const partialEvents = partialReports.length ? partialReports : request.partialSupportNote ? [null] : [];
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
@@ -114,8 +114,18 @@ export function RequestDetailModal({
               )}
             </article>
 
-            {request.partialSupportNote && request.status === "pending" && (
-              <article className="relative">
+            {partialEvents.map((partialReport, index) => {
+              const partialTime = partialReport?.createdAt ?? request.createdAt;
+              const note = request.partialSupportNote || partialReport?.details || "Ayuda parcial recibida.";
+              const PartialWrapper = partialReport ? "button" : "article";
+
+              return (
+              <PartialWrapper
+                key={partialReport?.id ?? `partial-note-${index}`}
+                type={partialReport ? "button" : undefined}
+                onClick={partialReport ? () => setSelectedSupport(partialReport) : undefined}
+                className={`relative block w-full text-left ${partialReport ? "active:scale-[0.99]" : ""}`}
+              >
                 <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-sos-muted" />
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <p className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#C25700]">
@@ -125,10 +135,11 @@ export function RequestDetailModal({
                 </div>
                 <div className="rounded-card bg-sos-partialSoft px-4 py-3">
                   <p className="text-[13px] font-extrabold text-[#C25700]">Que hace falta</p>
-                  <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{request.partialSupportNote}</p>
+                  <p className="mt-2 text-[16px] font-semibold leading-snug text-sos-ink">{note}</p>
                 </div>
-              </article>
-            )}
+              </PartialWrapper>
+              );
+            })}
           </div>
         </section>
         {request.photoUrl && <img src={request.photoUrl} alt="Foto de la solicitud" className="mt-4 max-h-52 w-full rounded-card object-cover" />}
@@ -142,10 +153,10 @@ export function RequestDetailModal({
                 <p className="text-[15px] font-extrabold text-sos-ink">
                   {latestSupport.anonymous ? "Alguien ofreció apoyo" : `${latestSupport.supporterName || "Persona solidaria"} ofreció apoyo`}
                 </p>
-                {(isOwner || latestSupport.supporterId === currentUserId) && latestSupport.supporterPhone && (
+                {isOwner && latestSupport.supporterPhone && (
                   <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{latestSupport.supporterPhone}</p>
                 )}
-                {!isOwner && latestSupport.supporterId !== currentUserId && latestSupport.supporterPhone && (
+                {!isOwner && latestSupport.supporterPhone && (
                   <p className="mt-1 text-[13px] font-extrabold text-sos-muted">Teléfono visible solo para quien creó la solicitud</p>
                 )}
                 <p className="mt-1 text-[13px] font-extrabold text-sos-primary">{supportStatusLabel(latestSupport.status)}</p>
@@ -212,8 +223,11 @@ export function RequestDetailModal({
                 <p className="mt-2 text-[18px] font-extrabold text-sos-ink">
                   {selectedSupport.anonymous ? "Apoyo anónimo" : selectedSupport.supporterName || "Persona solidaria"}
                 </p>
-                {(isOwner || selectedSupport.supporterId === currentUserId) && selectedSupport.supporterPhone && (
+                {isOwner && selectedSupport.supporterPhone && (
                   <p className="mt-1 text-[16px] font-extrabold text-sos-ink">{selectedSupport.supporterPhone}</p>
+                )}
+                {!isOwner && selectedSupport.supporterPhone && (
+                  <p className="mt-2 text-[13px] font-extrabold text-sos-muted">Teléfono visible solo para quien creó la solicitud</p>
                 )}
               </div>
 
