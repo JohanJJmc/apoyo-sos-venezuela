@@ -144,6 +144,13 @@ function optionalText(value) {
   return text || null;
 }
 
+function appendPartialNote(existingNote, nextNote) {
+  const cleanExistingNote = optionalText(existingNote);
+  const cleanNextNote = optionalText(nextNote);
+  if (!cleanNextNote) return cleanExistingNote;
+  return cleanExistingNote ? `${cleanExistingNote}\n\n${cleanNextNote}` : cleanNextNote;
+}
+
 function requireNumber(value, fieldName) {
   const number = Number(value);
   if (!Number.isFinite(number)) throw Object.assign(new Error(`${fieldName} no es válido.`), { statusCode: 400 });
@@ -237,7 +244,7 @@ async function confirmSupport(supabase, request, user) {
 
   const { data: requestRow, error: requestError } = await supabase
     .from("requests")
-    .select("id, created_by, category, item")
+    .select("id, created_by, category, item, partial_note")
     .eq("id", requestId)
     .single();
 
@@ -249,7 +256,7 @@ async function confirmSupport(supabase, request, user) {
   const requestUpdates = {
     status: status === "confirmed" ? "resolved" : "pending",
     partial_support: status === "partial",
-    partial_note: status === "partial" ? partialNote : null,
+    partial_note: status === "partial" ? appendPartialNote(requestRow.partial_note, partialNote) : null,
     resolved_at: status === "confirmed" ? new Date().toISOString() : null,
   };
 
@@ -260,6 +267,7 @@ async function confirmSupport(supabase, request, user) {
     .from("support_reports")
     .select("id")
     .eq("request_id", requestId)
+    .eq("status", "pending_confirmation")
     .order("created_at", { ascending: false })
     .limit(1);
 
@@ -268,7 +276,7 @@ async function confirmSupport(supabase, request, user) {
   if (latestReport) {
     const { data: updatedReport, error: updateReportError } = await supabase
       .from("support_reports")
-      .update({ status })
+      .update({ status, partial_note: status === "partial" ? partialNote : null })
       .eq("id", latestReport.id)
       .select("id, supporter_id")
       .single();

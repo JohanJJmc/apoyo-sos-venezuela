@@ -75,6 +75,7 @@ export function RequestDetailModal({
       : maskPhone(request.requesterPhone)
     : "";
   const requesterContact = [requesterName, requesterPhone].filter(Boolean).join(" - ");
+  const activeSupport = [...request.supportReports].reverse().find((report) => report.status === "pending_confirmation");
   const partialReports = request.supportReports.filter((report) => report.status === "partial");
   const partialEvents = partialReports.length ? partialReports : request.partialSupportNote ? [null] : [];
 
@@ -116,7 +117,7 @@ export function RequestDetailModal({
 
             {partialEvents.map((partialReport, index) => {
               const partialTime = partialReport?.createdAt ?? request.createdAt;
-              const note = request.partialSupportNote || partialReport?.details || "Ayuda parcial recibida.";
+              const note = partialReport?.partialNote || request.partialSupportNote || "Ayuda parcial recibida.";
               const PartialWrapper = partialReport ? "button" : "article";
 
               return (
@@ -146,20 +147,20 @@ export function RequestDetailModal({
 
         <div className="flex-1" />
 
-        {latestSupport && (
-          <button type="button" onClick={() => setSelectedSupport(latestSupport)} className="mb-7 w-full rounded-input bg-sos-resolvedSoft p-4 text-left">
+        {activeSupport && (
+          <button type="button" onClick={() => setSelectedSupport(activeSupport)} className="mb-7 w-full rounded-input bg-sos-resolvedSoft p-4 text-left">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[15px] font-extrabold text-sos-ink">
-                  {latestSupport.anonymous ? "Alguien ofreció apoyo" : `${latestSupport.supporterName || "Persona solidaria"} ofreció apoyo`}
+                  {activeSupport.anonymous ? "Alguien ofreció apoyo" : `${activeSupport.supporterName || "Persona solidaria"} ofreció apoyo`}
                 </p>
-                {isOwner && latestSupport.supporterPhone && (
-                  <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{latestSupport.supporterPhone}</p>
+                {isOwner && activeSupport.supporterPhone && (
+                  <p className="mt-1 text-[15px] font-extrabold text-sos-ink">{activeSupport.supporterPhone}</p>
                 )}
-                {!isOwner && latestSupport.supporterPhone && (
+                {!isOwner && activeSupport.supporterPhone && (
                   <p className="mt-1 text-[13px] font-extrabold text-sos-muted">Teléfono visible solo para quien creó la solicitud</p>
                 )}
-                <p className="mt-1 text-[13px] font-extrabold text-sos-primary">{supportStatusLabel(latestSupport.status)}</p>
+                <p className="mt-1 text-[13px] font-extrabold text-sos-primary">{supportStatusLabel(activeSupport.status)}</p>
               </div>
               <span className="text-4xl">→</span>
             </div>
@@ -179,7 +180,7 @@ export function RequestDetailModal({
                 <button
                   type="button"
                   onClick={() => {
-                    setPartialNote(request.partialSupportNote ?? "");
+                    setPartialNote("");
                     setIsPartialNoteOpen(true);
                   }}
                   className="min-h-12 w-full rounded-pill border border-sos-muted px-4 text-[15px] font-extrabold text-sos-muted"

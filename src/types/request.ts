@@ -15,6 +15,7 @@ export interface SupportReport {
   supporterName?: string;
   supporterPhone?: string;
   details?: string;
+  partialNote?: string;
   photoUrl?: string;
   latitude?: number;
   longitude?: number;

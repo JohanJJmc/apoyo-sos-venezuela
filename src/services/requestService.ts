@@ -64,6 +64,7 @@ type SupportReportRow = {
   supporter_name: string | null;
   supporter_phone: string | null;
   details: string | null;
+  partial_note: string | null;
   photo_url: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -122,6 +123,7 @@ function mapSupportReport(row: SupportReportRow): SupportReport {
     supporterName: row.supporter_name ?? undefined,
     supporterPhone: row.supporter_phone ?? undefined,
     details: row.details ?? undefined,
+    partialNote: row.partial_note ?? undefined,
     photoUrl: row.photo_url ?? undefined,
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
