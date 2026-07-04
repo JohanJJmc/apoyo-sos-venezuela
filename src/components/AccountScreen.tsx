@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AppSession } from "../services/authSession";
 import { authService } from "../services/authService";
 import { pushNotificationService } from "../services/pushNotificationService";
@@ -35,6 +35,17 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isEnablingPush, setIsEnablingPush] = useState(false);
   const [isTestingPush, setIsTestingPush] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    void pushNotificationService.isEnabled().then((enabled) => {
+      if (isMounted) setPushEnabled(enabled);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function saveProfile() {
     setError("");
@@ -104,8 +115,15 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
     setError("");
     setIsEnablingPush(true);
     try {
-      await pushNotificationService.enable();
-      onNotify?.("Notificaciones activadas correctamente.", "success");
+      if (pushEnabled) {
+        await pushNotificationService.disable();
+        setPushEnabled(false);
+        onNotify?.("Notificaciones desactivadas.", "info");
+      } else {
+        await pushNotificationService.enable();
+        setPushEnabled(true);
+        onNotify?.("Notificaciones activadas correctamente.", "success");
+      }
     } catch (nextError) {
       const message = accountErrorMessage(nextError, "No se pudieron activar las notificaciones.");
       setError(message);
@@ -152,21 +170,36 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
       </section>
 
       <section className="mt-10 space-y-4 border-t border-sos-border pt-8">
-        <h2 className="text-[20px] font-extrabold">Notificaciones</h2>
-        <p className="text-[14px] font-semibold text-sos-muted">
-          Recibe avisos cuando alguien ofrezca apoyo, cuando tu apoyo sea aprobado o cuando expire.
-        </p>
         <button
           type="button"
           disabled={isEnablingPush || !pushNotificationService.isSupported()}
           onClick={enablePushNotifications}
-          className="min-h-14 w-full rounded-pill border border-sos-border px-5 text-[16px] font-extrabold text-sos-ink shadow-soft disabled:opacity-50"
+          className="flex min-h-14 w-full items-center justify-between rounded-input border border-sos-border bg-white px-4 text-left shadow-soft disabled:opacity-50"
+          aria-pressed={pushEnabled}
         >
-          {isEnablingPush ? "Activando..." : "Activar notificaciones"}
+          <span>
+            <span className="block text-[16px] font-extrabold text-sos-ink">
+              {pushEnabled ? "Notificaciones activadas" : "Notificaciones"}
+            </span>
+            <span className="mt-0.5 block text-[13px] font-semibold text-sos-muted">
+              {pushEnabled ? "Recibirás avisos importantes." : "Activa avisos de apoyo y expiración."}
+            </span>
+          </span>
+          <span
+            className={`relative h-8 w-14 shrink-0 rounded-pill transition ${
+              pushEnabled ? "bg-sos-orange" : "bg-sos-border"
+            }`}
+          >
+            <span
+              className={`absolute top-1 h-6 w-6 rounded-pill bg-white shadow-soft transition ${
+                pushEnabled ? "left-7" : "left-1"
+              }`}
+            />
+          </span>
         </button>
         <button
           type="button"
-          disabled={isTestingPush || !pushNotificationService.isSupported()}
+          disabled={isTestingPush || !pushNotificationService.isSupported() || !pushEnabled}
           onClick={sendTestPushNotification}
           className="min-h-12 w-full rounded-pill bg-sos-primarySoft px-5 text-[15px] font-extrabold text-sos-primary disabled:opacity-50"
         >

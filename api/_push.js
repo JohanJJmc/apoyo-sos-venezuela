@@ -39,6 +39,6 @@ export function pushPayload(title, body, url = "/") {
     body,
     url,
     icon: "/assets/nexo-app-icon.png",
-    badge: "/assets/nexo-app-icon.png",
+    badge: "/assets/nexo-notification-badge.svg",
   };
 }

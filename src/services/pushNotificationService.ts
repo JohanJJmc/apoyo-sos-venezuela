@@ -51,6 +51,33 @@ async function authenticatedPost(url: string) {
   }
 }
 
+async function authenticatedDelete(url: string, body: Record<string, unknown>) {
+  if (!supabase) throw new Error("Supabase no está configurado.");
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Debes iniciar sesión para usar notificaciones.");
+
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const result = (await response.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+  if (!response.ok || !result.ok) {
+    throw new Error(result.message || "No se pudieron desactivar las notificaciones.");
+  }
+}
+
+async function getCurrentSubscription() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+  const registration = await navigator.serviceWorker.ready;
+  return registration.pushManager.getSubscription();
+}
+
 export const pushNotificationService = {
   isSupported() {
     return Boolean("serviceWorker" in navigator && "PushManager" in window && "Notification" in window && getPublicVapidKey());
@@ -58,6 +85,11 @@ export const pushNotificationService = {
 
   permission() {
     return "Notification" in window ? Notification.permission : "denied";
+  },
+
+  async isEnabled() {
+    if (!this.isSupported() || this.permission() !== "granted") return false;
+    return Boolean(await getCurrentSubscription());
   },
 
   async enable() {
@@ -69,7 +101,7 @@ export const pushNotificationService = {
     if (permission !== "granted") throw new Error("No se otorgó permiso para enviar notificaciones.");
 
     const registration = await navigator.serviceWorker.ready;
-    const existingSubscription = await registration.pushManager.getSubscription();
+    const existingSubscription = await getCurrentSubscription();
     const subscription =
       existingSubscription ??
       (await registration.pushManager.subscribe({
@@ -78,6 +110,14 @@ export const pushNotificationService = {
       }));
 
     await postSubscription(subscription);
+  },
+
+  async disable() {
+    const subscription = await getCurrentSubscription();
+    if (!subscription) return;
+    const endpoint = subscription.endpoint;
+    await subscription.unsubscribe();
+    await authenticatedDelete("/api/push-subscription", { endpoint });
   },
 
   async sendTest() {

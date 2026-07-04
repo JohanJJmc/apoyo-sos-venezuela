@@ -31,7 +31,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || "Tienes una actualización pendiente.",
     icon: data.icon || "/assets/nexo-app-icon.png",
-    badge: data.badge || "/assets/nexo-app-icon.png",
+    badge: data.badge || "/assets/nexo-notification-badge.svg",
     data: {
       url: data.url || "/",
     },
