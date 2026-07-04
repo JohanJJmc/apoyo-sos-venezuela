@@ -15,6 +15,8 @@ export default {
           coral: "#FF4545",
           pending: "#D92D20",
           pendingSoft: "#FDECEC",
+          partial: "#E6A700",
+          partialSoft: "#FFF6D8",
           resolved: "#168A4A",
           resolvedSoft: "#EAF7EF",
           border: "#D9E2EC",

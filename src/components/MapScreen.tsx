@@ -143,14 +143,15 @@ export function MapScreen({
       clusterRequests(map.current, requests).forEach((cluster) => {
         if (cluster.requests.length === 1) {
           const request = cluster.requests[0];
-          L.marker([request.latitude, request.longitude], { icon: createRequestMarker(request.status, request.category) })
+          L.marker([request.latitude, request.longitude], { icon: createRequestMarker(request) })
             .addTo(markers.current!)
             .on("click", () => onSelectRequest(request));
           return;
         }
 
-        const hasPending = cluster.requests.some((request) => request.status === "pending");
-        const clusterStatus = hasPending ? "pending" : "resolved";
+        const hasPending = cluster.requests.some((request) => request.status === "pending" && !request.partialSupport);
+        const hasPartial = cluster.requests.some((request) => request.status === "pending" && request.partialSupport);
+        const clusterStatus = hasPending ? "pending" : hasPartial ? "partial" : "resolved";
         L.marker([cluster.latitude, cluster.longitude], {
           icon: createRequestClusterMarker(cluster.requests.length, clusterStatus),
         })

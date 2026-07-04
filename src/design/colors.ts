@@ -7,6 +7,8 @@ export const colors = {
   primarySoft: "#EAF1FF",
   pending: "#D92D20",
   pendingSoft: "#FDECEC",
+  partial: "#E6A700",
+  partialSoft: "#FFF6D8",
   resolved: "#168A4A",
   resolvedSoft: "#EAF7EF",
   border: "#D9E2EC",

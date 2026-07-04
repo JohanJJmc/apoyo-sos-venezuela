@@ -227,8 +227,12 @@ async function offerSupport(supabase, request, user) {
 async function confirmSupport(supabase, request, user) {
   const requestId = requireText(request.body?.requestId, "La solicitud");
   const status = requireText(request.body?.status, "El estado");
+  const partialNote = optionalText(request.body?.partialNote);
   if (!["confirmed", "partial", "rejected"].includes(status)) {
     throw Object.assign(new Error("Estado de apoyo no válido."), { statusCode: 400 });
+  }
+  if (status === "partial" && !partialNote) {
+    throw Object.assign(new Error("Indica qué apoyo falta para mantener la solicitud pendiente."), { statusCode: 400 });
   }
 
   const { data: requestRow, error: requestError } = await supabase
@@ -245,6 +249,7 @@ async function confirmSupport(supabase, request, user) {
   const requestUpdates = {
     status: status === "confirmed" ? "resolved" : "pending",
     partial_support: status === "partial",
+    partial_note: status === "partial" ? partialNote : null,
     resolved_at: status === "confirmed" ? new Date().toISOString() : null,
   };
 

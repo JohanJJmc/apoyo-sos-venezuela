@@ -10,7 +10,7 @@ interface RequestDetailModalProps {
   currentUserId: string;
   onClose: () => void;
   onOfferSupport: (requestId: string) => void;
-  onConfirmSupport: (requestId: string, status: SupportReport["status"]) => void;
+  onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string) => void;
   onCancelRequest: (requestId: string) => void;
 }
 
@@ -42,6 +42,8 @@ export function RequestDetailModal({
   onCancelRequest,
 }: RequestDetailModalProps) {
   const [selectedSupport, setSelectedSupport] = useState<SupportReport | null>(null);
+  const [isPartialNoteOpen, setIsPartialNoteOpen] = useState(false);
+  const [partialNote, setPartialNote] = useState("");
   if (!request) return null;
 
   const isOwner = request.createdBy === currentUserId;
@@ -80,6 +82,12 @@ export function RequestDetailModal({
         </div>
 
         {request.description && <p className="mt-4 text-[16px] font-semibold text-sos-muted">{request.description}</p>}
+        {request.partialSupportNote && request.status === "pending" && (
+          <section className="mt-4 rounded-input border border-sos-partial bg-sos-partialSoft p-4">
+            <p className="text-[14px] font-extrabold uppercase text-sos-partial">Ayuda parcial recibida</p>
+            <p className="mt-2 text-[16px] font-bold text-sos-ink">Falta: {request.partialSupportNote}</p>
+          </section>
+        )}
         {request.photoUrl && <img src={request.photoUrl} alt="Foto de la solicitud" className="mt-4 max-h-52 w-full rounded-card object-cover" />}
 
         <div className="flex-1" />
@@ -116,7 +124,10 @@ export function RequestDetailModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onConfirmSupport(request.id, "partial")}
+                  onClick={() => {
+                    setPartialNote(request.partialSupportNote ?? "");
+                    setIsPartialNoteOpen(true);
+                  }}
                   className="min-h-12 w-full rounded-pill border border-sos-muted px-4 text-[15px] font-extrabold text-sos-muted"
                 >
                   Recibi ayuda parcial
@@ -178,6 +189,41 @@ export function RequestDetailModal({
                   <img src={selectedSupport.photoUrl} alt="Foto del apoyo" className="max-h-80 w-full rounded-card object-cover" />
                 </div>
               )}
+            </section>
+          </div>
+        )}
+
+        {isPartialNoteOpen && (
+          <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-[rgba(16,42,67,0.42)] px-7">
+            <section className="w-full max-w-[420px] rounded-card bg-white p-6 shadow-modal">
+              <h3 className="text-center text-[20px] font-extrabold text-sos-ink">¿Qué apoyo falta?</h3>
+              <p className="mt-3 text-center text-[15px] font-semibold leading-snug text-sos-muted">
+                Describe brevemente qué quedó pendiente para que otras personas sepan cómo completar la ayuda.
+              </p>
+              <textarea
+                value={partialNote}
+                onChange={(event) => setPartialNote(event.target.value.slice(0, 240))}
+                placeholder="Ejemplo: faltan 2 cajas de agua y medicamentos para la noche"
+                className="mt-5 min-h-28 w-full resize-none rounded-input border border-sos-border bg-sos-background p-4 text-[16px] font-semibold text-sos-ink outline-none focus:border-sos-orange"
+              />
+              <button
+                type="button"
+                disabled={!partialNote.trim()}
+                onClick={() => {
+                  onConfirmSupport(request.id, "partial", partialNote.trim());
+                  setIsPartialNoteOpen(false);
+                }}
+                className="mt-5 min-h-14 w-full rounded-pill bg-sos-partial px-5 text-[16px] font-extrabold text-white disabled:bg-sos-border"
+              >
+                Guardar ayuda parcial
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPartialNoteOpen(false)}
+                className="mt-3 min-h-12 w-full rounded-pill bg-sos-background px-5 text-[15px] font-extrabold text-sos-muted"
+              >
+                Cancelar
+              </button>
             </section>
           </div>
         )}

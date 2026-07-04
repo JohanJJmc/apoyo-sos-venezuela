@@ -34,6 +34,7 @@ export interface Request {
   longitude: number;
   status: RequestStatus;
   partialSupport: boolean;
+  partialSupportNote?: string;
   createdAt: string;
   resolvedAt?: string;
   createdBy: string;

@@ -1,5 +1,5 @@
 import L from "leaflet";
-import type { RequestStatus } from "../types/request";
+import type { Request, RequestStatus } from "../types/request";
 import { colors } from "../design";
 
 function markerIconSvg(category: string) {
@@ -19,19 +19,25 @@ function markerIconSvg(category: string) {
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[category] ?? `<path ${common} d="M12 5v14"/><path ${common} d="M5 12h14"/>`}</svg>`;
 }
 
-export function createRequestMarker(status: RequestStatus, category: string) {
-  const color = status === "resolved" ? colors.resolved : colors.pending;
+function requestMarkerColor(request: Pick<Request, "status" | "partialSupport">) {
+  if (request.status === "resolved") return colors.resolved;
+  if (request.partialSupport) return colors.partial;
+  return colors.pending;
+}
+
+export function createRequestMarker(request: Pick<Request, "status" | "partialSupport" | "category">) {
+  const color = requestMarkerColor(request);
 
   return L.divIcon({
     className: "",
-    html: `<div class="sos-marker" style="background:${color}">${markerIconSvg(category)}</div>`,
+    html: `<div class="sos-marker" style="background:${color}">${markerIconSvg(request.category)}</div>`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
   });
 }
 
-export function createRequestClusterMarker(count: number, status: RequestStatus) {
-  const color = status === "resolved" ? colors.resolved : colors.pending;
+export function createRequestClusterMarker(count: number, status: RequestStatus | "partial") {
+  const color = status === "resolved" ? colors.resolved : status === "partial" ? colors.partial : colors.pending;
 
   return L.divIcon({
     className: "",

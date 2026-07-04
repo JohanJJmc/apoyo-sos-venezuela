@@ -41,6 +41,7 @@ const seedRequests: Request[] = [
     longitude: -66.913,
     status: "pending",
     partialSupport: true,
+    partialSupportNote: "Falta completar la atención médica.",
     createdAt: new Date(Date.now() - 3 * 60 * 60000).toISOString(),
     resolvedAt: undefined,
     createdBy: "seed-user",
@@ -187,7 +188,7 @@ export const localRequestStore = {
     return report;
   },
 
-  confirmSupport(requestId: string, status: SupportReport["status"]) {
+  confirmSupport(requestId: string, status: SupportReport["status"], partialNote?: string) {
     const requests = read();
     write(
       requests.map((request) => {
@@ -196,6 +197,7 @@ export const localRequestStore = {
           ...request,
           status: status === "confirmed" ? "resolved" : "pending",
           partialSupport: status === "partial" ? true : request.partialSupport,
+          partialSupportNote: status === "partial" ? partialNote?.trim() || request.partialSupportNote : request.partialSupportNote,
           resolvedAt: status === "confirmed" ? now() : undefined,
           supportReports: request.supportReports.map((report, index) =>
             index === request.supportReports.length - 1 ? { ...report, status } : report,

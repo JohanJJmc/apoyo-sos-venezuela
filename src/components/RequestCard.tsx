@@ -10,6 +10,7 @@ interface RequestCardProps {
 export function RequestCard({ request, onClick }: RequestCardProps) {
   const hasPendingSupport = request.supportReports.some((report) => report.status === "pending_confirmation");
   const isResolved = request.status === "resolved";
+  const isPartial = request.partialSupport && !isResolved;
   const tone = isResolved
     ? {
         border: "border-sos-resolved",
@@ -17,6 +18,13 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
         badge: "bg-sos-resolvedSoft text-sos-resolved",
         label: "Atendido",
       }
+    : isPartial
+      ? {
+          border: "border-sos-partial",
+          category: "text-sos-partial",
+          badge: "bg-sos-partialSoft text-sos-partial",
+          label: "Parcial",
+        }
     : {
         border: "border-sos-pending",
         category: "text-sos-pending",
@@ -43,9 +51,14 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
             </p>
           </div>
           <span className={`shrink-0 rounded-pill px-4 py-2 text-[13px] font-extrabold uppercase ${tone.badge}`}>
-            {request.partialSupport && !isResolved ? "Apoyo parcial" : tone.label}
+            {tone.label}
           </span>
         </div>
+        {request.partialSupportNote && request.status === "pending" && (
+          <p className="mt-4 rounded-input bg-sos-partialSoft px-3 py-2 text-[14px] font-extrabold text-sos-partial">
+            Falta: {request.partialSupportNote}
+          </p>
+        )}
         {hasPendingSupport && request.status === "pending" && (
           <p className="mt-4 rounded-pill bg-sos-primarySoft px-3 py-2 text-center text-[13px] font-extrabold text-sos-primary">
             Apoyo ofrecido, esperando confirmación
