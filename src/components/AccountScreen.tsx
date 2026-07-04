@@ -34,6 +34,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isEnablingPush, setIsEnablingPush] = useState(false);
+  const [isTestingPush, setIsTestingPush] = useState(false);
 
   async function saveProfile() {
     setError("");
@@ -114,6 +115,21 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
     }
   }
 
+  async function sendTestPushNotification() {
+    setError("");
+    setIsTestingPush(true);
+    try {
+      await pushNotificationService.sendTest();
+      onNotify?.("Notificación de prueba enviada.", "success");
+    } catch (nextError) {
+      const message = accountErrorMessage(nextError, "No se pudo enviar la notificación de prueba.");
+      setError(message);
+      onNotify?.(message, "danger");
+    } finally {
+      setIsTestingPush(false);
+    }
+  }
+
   return (
     <main className="nexo-form-screen min-h-dvh bg-white px-7 pb-7 pt-16 text-sos-ink">
       <BackButton onClick={onBack} label="Mi cuenta" />
@@ -147,6 +163,14 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
           className="min-h-14 w-full rounded-pill border border-sos-border px-5 text-[16px] font-extrabold text-sos-ink shadow-soft disabled:opacity-50"
         >
           {isEnablingPush ? "Activando..." : "Activar notificaciones"}
+        </button>
+        <button
+          type="button"
+          disabled={isTestingPush || !pushNotificationService.isSupported()}
+          onClick={sendTestPushNotification}
+          className="min-h-12 w-full rounded-pill bg-sos-primarySoft px-5 text-[15px] font-extrabold text-sos-primary disabled:opacity-50"
+        >
+          {isTestingPush ? "Enviando prueba..." : "Enviar notificación de prueba"}
         </button>
       </section>
 

@@ -32,6 +32,25 @@ async function postSubscription(subscription: PushSubscription) {
   }
 }
 
+async function authenticatedPost(url: string) {
+  if (!supabase) throw new Error("Supabase no está configurado.");
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Debes iniciar sesión para usar notificaciones.");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = (await response.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+  if (!response.ok || !result.ok) {
+    throw new Error(result.message || "No se pudo enviar la notificación.");
+  }
+}
+
 export const pushNotificationService = {
   isSupported() {
     return Boolean("serviceWorker" in navigator && "PushManager" in window && "Notification" in window && getPublicVapidKey());
@@ -59,5 +78,9 @@ export const pushNotificationService = {
       }));
 
     await postSubscription(subscription);
+  },
+
+  async sendTest() {
+    await authenticatedPost("/api/test-push");
   },
 };
