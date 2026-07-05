@@ -78,6 +78,24 @@ export const authService = {
     return saveAndReturn(sessionFromSupabaseUser(data.user));
   },
 
+  async signInWithGoogle() {
+    if (!supabase) {
+      throw new Error("Google solo está disponible cuando Supabase está configurado.");
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getAuthRedirectUrl(),
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account",
+        },
+      },
+    });
+    if (error) throw error;
+  },
+
   async signUp(email: string, password: string, fullName: string, phone: string) {
     const cleanEmail = normalizeEmail(email);
 

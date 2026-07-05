@@ -72,6 +72,27 @@ function SecurityNotice() {
   );
 }
 
+function GoogleIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23Z" />
+      <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84Z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.31 9.14 5.38 12 5.38Z" />
+    </svg>
+  );
+}
+
+function OAuthDivider() {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="h-px flex-1 bg-sos-border" />
+      <span className="text-[12px] font-extrabold uppercase tracking-[0.08em] text-sos-muted">o</span>
+      <span className="h-px flex-1 bg-sos-border" />
+    </div>
+  );
+}
+
 function PasswordField({
   value,
   onChange,
@@ -148,6 +169,18 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const confirmationEmail = cleanSignupEmail || cleanLoginEmail;
   const cleanFullName = fullName.trim();
   const cleanSignupPhone = signupPhone.trim();
+
+  async function continueWithGoogle() {
+    setIsLoading(true);
+    setError("");
+    try {
+      await authService.signInWithGoogle();
+    } catch (nextError) {
+      setError(authErrorMessage(nextError));
+      setIsLoading(false);
+    }
+  }
+
   async function submitLogin() {
     if (!isValidEmail(cleanLoginEmail)) {
       setError("Ingresa un correo válido.");
@@ -317,6 +350,16 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           <button type="button" disabled={isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
             Crear cuenta
           </button>
+          <OAuthDivider />
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={continueWithGoogle}
+            className="flex min-h-14 w-full items-center justify-center gap-3 rounded-pill border border-sos-border bg-white px-5 text-[16px] font-extrabold text-sos-ink shadow-soft disabled:opacity-50"
+          >
+            <GoogleIcon />
+            Continuar con Google
+          </button>
           <button type="button" onClick={() => goTo("login")} className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink">
             Ya tengo cuenta
           </button>
@@ -463,6 +506,16 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
       <div className="nexo-form-actions">
         <button type="button" disabled={isLoading} onClick={submitLogin} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
           Iniciar sesión
+        </button>
+        <OAuthDivider />
+        <button
+          type="button"
+          disabled={isLoading}
+          onClick={continueWithGoogle}
+          className="flex min-h-14 w-full items-center justify-center gap-3 rounded-pill border border-sos-border bg-white px-5 text-[16px] font-extrabold text-sos-ink shadow-soft disabled:opacity-50"
+        >
+          <GoogleIcon />
+          Continuar con Google
         </button>
         <button type="button" onClick={() => goTo("signup")} className="min-h-12 text-[14px] font-extrabold text-sos-ink">
           Crear cuenta
