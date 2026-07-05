@@ -127,7 +127,7 @@ export function RequestDetailModal({
               const eventColor = isPartial ? "#C25700" : "#008A3D";
               const eventBg = isPartial ? "bg-sos-partialSoft" : "bg-sos-resolvedSoft";
               const supportDetails = supportReport.details || "Apoyo ofrecido sin descripción.";
-              const missingDetails = supportReport.partialNote || request.partialSupportNote || "Pendiente por especificar.";
+              const missingDetails = supportReport.partialNote || "Pendiente por especificar.";
 
               return (
               <button

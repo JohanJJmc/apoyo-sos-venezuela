@@ -57,11 +57,29 @@
   width: 100%;
 }
 
+.nexo-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.nexo-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.nexo-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 @media (min-width: 1024px) {
   .nexo-form-screen > * {
     margin-left: auto;
     margin-right: auto;
-    max-width: min(40vw, 640px);
+    max-width: min(40vw, 540px);
   }
 }
 

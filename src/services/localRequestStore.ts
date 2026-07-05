@@ -8,12 +8,6 @@ const SUPPORT_CONFIRMATION_TIMEOUT_MS = 6 * 60 * 60 * 1000;
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
 
-function appendPartialNote(existingNote: string | undefined, nextNote: string) {
-  const cleanNextNote = nextNote.trim();
-  if (!cleanNextNote) return existingNote;
-  return existingNote ? `${existingNote}\n\n${cleanNextNote}` : cleanNextNote;
-}
-
 const seedRequests: Request[] = [
   {
     id: id(),
@@ -205,8 +199,7 @@ export const localRequestStore = {
           ...request,
           status: status === "confirmed" ? "resolved" : "pending",
           partialSupport: status === "partial" ? true : request.partialSupport,
-          partialSupportNote:
-            status === "partial" && partialNote ? appendPartialNote(request.partialSupportNote, partialNote) : request.partialSupportNote,
+          partialSupportNote: status === "partial" && partialNote ? partialNote.trim() : request.partialSupportNote,
           resolvedAt: status === "confirmed" ? now() : undefined,
           supportReports: request.supportReports.map((report) => {
             if (report.id !== targetReportId) return report;

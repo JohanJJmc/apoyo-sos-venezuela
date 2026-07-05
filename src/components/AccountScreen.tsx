@@ -152,7 +152,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
     <main className="nexo-form-screen min-h-dvh bg-white px-7 pb-7 pt-16 text-sos-ink">
       <BackButton onClick={onBack} label="Mi cuenta" />
 
-      <section className="mt-9 space-y-4">
+      <section className="nexo-form-stack mt-9">
         <TextInput label="Nombre y apellido" value={name} onChange={(event) => setName(sanitizeName(event.target.value))} placeholder="Nombre y apellido" autoComplete="off" />
         <TextInput label="Correo" value={email} onChange={(event) => setEmail(normalizeEmail(event.target.value))} placeholder="correo@ejemplo.com" inputMode="email" autoComplete="off" />
         <PhoneInput label="Teléfono" value={phone} onChange={setPhone} placeholder="Teléfono" autoComplete="off" />
@@ -169,7 +169,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
         </button>
       </section>
 
-      <section className="mt-10 space-y-4 border-t border-sos-border pt-8">
+      <section className="nexo-form-stack mt-10 border-t border-sos-border pt-8">
         <button
           type="button"
           disabled={isEnablingPush || !pushNotificationService.isSupported()}
@@ -207,7 +207,7 @@ export function AccountScreen({ session, onBack, onSessionChange, onNotify }: Ac
         </button>
       </section>
 
-      <section className="mt-10 space-y-4 border-t border-sos-border pt-8">
+      <section className="nexo-form-stack mt-10 border-t border-sos-border pt-8">
         <h2 className="text-[20px] font-extrabold">Contraseña</h2>
         <p className="text-[14px] font-semibold text-sos-muted">Por seguridad no mostramos tu contraseña actual. Puedes crear una nueva aquí.</p>
         <TextInput

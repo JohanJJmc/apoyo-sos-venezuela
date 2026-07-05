@@ -52,7 +52,7 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
         Necesitamos tu nombre y teléfono para que una solicitud o apoyo pueda ser confirmado de forma segura.
       </p>
 
-      <section className="mt-10 space-y-5">
+      <section className="nexo-form-stack mt-10">
         <TextInput
           label="Nombre y apellido"
           value={name}
@@ -75,17 +75,19 @@ export function RequiredPhoneScreen({ session, onComplete, onSignOut, onNotify }
 
       <div className="min-h-10 flex-1" />
 
-      <button
-        type="button"
-        onClick={saveProfile}
-        disabled={isSaving}
-        className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
-      >
-        {isSaving ? "Guardando..." : "Guardar información"}
-      </button>
-      <button type="button" onClick={onSignOut} className="mt-6 text-[14px] font-extrabold text-sos-muted">
-        Cerrar sesión
-      </button>
+      <div className="nexo-form-actions">
+        <button
+          type="button"
+          onClick={saveProfile}
+          disabled={isSaving}
+          className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+        >
+          {isSaving ? "Guardando..." : "Guardar información"}
+        </button>
+        <button type="button" onClick={onSignOut} className="min-h-12 text-[14px] font-extrabold text-sos-muted">
+          Cerrar sesión
+        </button>
+      </div>
     </main>
   );
 }

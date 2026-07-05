@@ -284,7 +284,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Crear una cuenta ayuda a que puedas gestionar las solicitudes o apoyo que hagas
         </p>
 
-        <form className="mt-9 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="nexo-form-group mt-9" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <input name="nexo_register_person_name" value={fullName} onChange={(event) => setFullName(sanitizeName(event.target.value))} placeholder="Nombre y apellido" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
           <PhoneInput label="" value={signupPhone} onChange={setSignupPhone} placeholder="Teléfono" autoComplete="off" />
           <input name="nexo_register_contact_mail" value={signupEmail} onChange={(event) => setSignupEmail(normalizeEmail(event.target.value))} placeholder="Ingresa tu correo" inputMode="email" autoComplete="off" autoCorrect="off" spellCheck={false} className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
@@ -292,7 +292,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           <PasswordField name="nexo_signup_password_confirm" value={passwordConfirm} onChange={setPasswordConfirm} placeholder="Confirma tu contraseña" visible={showPasswordConfirm} onToggle={() => setShowPasswordConfirm((visible) => !visible)} autoComplete="new-password" />
         </form>
 
-        <div className="mt-8 space-y-4">
+        <div className="mt-10 space-y-5">
           <SecurityNotice />
           <label className="flex items-start gap-3 rounded-input border border-sos-border bg-white p-4 text-[13px] font-extrabold leading-snug text-sos-ink">
             <input
@@ -310,15 +310,17 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
         <div className="min-h-8 flex-1" />
 
-        <div className="mb-5">
+        <div className="mb-6">
           <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
         </div>
-        <button type="button" disabled={isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
-          Crear cuenta
-        </button>
-        <button type="button" onClick={() => goTo("login")} className="mt-5 min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink">
-          Ya tengo cuenta
-        </button>
+        <div className="nexo-form-actions">
+          <button type="button" disabled={isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+            Crear cuenta
+          </button>
+          <button type="button" onClick={() => goTo("login")} className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink">
+            Ya tengo cuenta
+          </button>
+        </div>
       </main>
     );
   }
@@ -331,7 +333,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.
         </p>
 
-        <form className="mt-9 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="nexo-form-group mt-9" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <input
             name="nexo_recovery_email"
             value={resetEmail}
@@ -365,7 +367,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           Crea una nueva contraseña para volver a entrar a tu cuenta.
         </p>
 
-        <form className="mt-10 space-y-4" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
+        <form className="nexo-form-group mt-10" autoComplete="off" onSubmit={(event) => event.preventDefault()}>
           <PasswordField
             name="nexo_new_recovery_password"
             value={resetPassword}
@@ -446,7 +448,7 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
         </div>
       )}
 
-      <form className="mt-9 space-y-4" autoComplete="on" onSubmit={(event) => event.preventDefault()}>
+      <form className="nexo-form-group mt-9" autoComplete="on" onSubmit={(event) => event.preventDefault()}>
         <input name="email" value={loginEmail} onChange={(event) => setLoginEmail(normalizeEmail(event.target.value))} placeholder="Ingresa tu correo" inputMode="email" autoComplete="username" className="min-h-14 w-full rounded-input border border-sos-border bg-sos-background px-4 text-[16px] font-semibold outline-none focus:border-sos-orange" />
         <PasswordField name="password" value={loginPassword} onChange={setLoginPassword} placeholder="Ingresa tu contraseña" visible={showLoginPassword} onToggle={() => setShowLoginPassword((visible) => !visible)} autoComplete="current-password" />
       </form>
@@ -458,15 +460,17 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
       {error && <p className="mt-4 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
       <div className="min-h-8 flex-1" />
 
-      <button type="button" disabled={isLoading} onClick={submitLogin} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
-        Iniciar sesión
-      </button>
-      <button type="button" onClick={() => goTo("signup")} className="mt-6 text-[14px] font-extrabold text-sos-ink">
-        Crear cuenta
-      </button>
-      <button type="button" onClick={() => onLogin(createAnonymousSession())} className="mt-8 text-[14px] font-extrabold text-sos-ink">
-        Entrar como anónimo
-      </button>
+      <div className="nexo-form-actions">
+        <button type="button" disabled={isLoading} onClick={submitLogin} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+          Iniciar sesión
+        </button>
+        <button type="button" onClick={() => goTo("signup")} className="min-h-12 text-[14px] font-extrabold text-sos-ink">
+          Crear cuenta
+        </button>
+        <button type="button" onClick={() => onLogin(createAnonymousSession())} className="min-h-12 text-[14px] font-extrabold text-sos-ink">
+          Entrar como anónimo
+        </button>
+      </div>
     </main>
   );
 }

@@ -177,10 +177,10 @@ export function RequestFormModal({
       >
         <BackButton onClick={onClose} label="Nueva solicitud" />
 
-        <div className="mt-10 space-y-6">
+        <div className="nexo-form-stack mt-10">
           <CategoryDropdown category={category} item={item} onCategoryChange={changeCategory} onItemChange={setItem} />
 
-          <section className="space-y-3">
+          <section className="nexo-form-group">
             <p className="text-[14px] font-extrabold text-sos-muted">¿Quién Solicita?</p>
             <TextInput
               label=""
@@ -255,14 +255,16 @@ export function RequestFormModal({
           {error && <p className="rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
 
           <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!canSubmit || isSubmitting}
-            className="sos-gradient mt-6 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
-          >
-            {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
-          </button>
+          <div className="nexo-form-actions pt-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!canSubmit || isSubmitting}
+              className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
+            >
+              {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
+            </button>
+          </div>
         </div>
       </section>
     </div>

@@ -144,13 +144,6 @@ function optionalText(value) {
   return text || null;
 }
 
-function appendPartialNote(existingNote, nextNote) {
-  const cleanExistingNote = optionalText(existingNote);
-  const cleanNextNote = optionalText(nextNote);
-  if (!cleanNextNote) return cleanExistingNote;
-  return cleanExistingNote ? `${cleanExistingNote}\n\n${cleanNextNote}` : cleanNextNote;
-}
-
 function requireNumber(value, fieldName) {
   const number = Number(value);
   if (!Number.isFinite(number)) throw Object.assign(new Error(`${fieldName} no es válido.`), { statusCode: 400 });
@@ -277,7 +270,7 @@ async function confirmSupport(supabase, request, user) {
   const requestUpdates = {
     status: status === "confirmed" ? "resolved" : "pending",
     partial_support: status === "partial",
-    partial_note: status === "partial" ? appendPartialNote(requestRow.partial_note, partialNote) : null,
+    partial_note: status === "partial" ? partialNote : null,
     resolved_at: status === "confirmed" ? new Date().toISOString() : null,
   };
 
