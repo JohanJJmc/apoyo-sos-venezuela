@@ -12,6 +12,13 @@ interface RequestDetailModalProps {
   onClose: () => void;
   onOfferSupport: (requestId: string) => void;
   onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) => void;
+  onReportUser?: (input: {
+    requestId: string;
+    supportReportId: string;
+    reportedUserId: string;
+    reason: string;
+    details?: string;
+  }) => Promise<void> | void;
   onCancelRequest: (requestId: string) => void;
   onEditRequest?: (request: Request) => void;
 }
@@ -103,6 +110,7 @@ export function RequestDetailModal({
   onClose,
   onOfferSupport,
   onConfirmSupport,
+  onReportUser,
   onCancelRequest,
   onEditRequest,
 }: RequestDetailModalProps) {
@@ -157,7 +165,15 @@ export function RequestDetailModal({
     setSelectedSupport(null);
   }
 
-  function sendReport() {
+  async function sendReport() {
+    if (!selectedSupport || !reportReason) return;
+    await onReportUser?.({
+      requestId,
+      supportReportId: selectedSupport.id,
+      reportedUserId: selectedSupport.supporterId,
+      reason: reportReason,
+      details: reportDetails.trim() || undefined,
+    });
     setIsReportOpen(false);
     setReportReason("");
     setReportDetails("");

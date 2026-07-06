@@ -255,6 +255,18 @@ export const requestService = {
     await requestAction({ action: "confirm_support", requestId, status, partialNote, supportReportId });
   },
 
+  async reportUser(input: {
+    requestId: string;
+    supportReportId: string;
+    reportedUserId: string;
+    reason: string;
+    details?: string;
+  }) {
+    if (!supabase) return;
+
+    await requestAction({ action: "report_user", input });
+  },
+
   async cancelRequest(requestId: string) {
     if (!supabase) return localRequestStore.cancelRequest(requestId);
 

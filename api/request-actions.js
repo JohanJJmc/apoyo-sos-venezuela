@@ -374,6 +374,39 @@ async function cancelRequest(supabase, request, user) {
   return { ok: true };
 }
 
+async function reportUser(supabase, request, user) {
+  const input = request.body?.input || {};
+  const requestId = requireText(input.requestId, "La solicitud");
+  const supportReportId = requireText(input.supportReportId, "El apoyo");
+  const reportedUserId = requireText(input.reportedUserId, "El usuario reportado");
+  const reason = requireText(input.reason, "El motivo");
+  const details = optionalText(input.details);
+
+  const { data: supportReport, error: supportError } = await supabase
+    .from("support_reports")
+    .select("id, request_id, supporter_id")
+    .eq("id", supportReportId)
+    .eq("request_id", requestId)
+    .single();
+
+  if (supportError || !supportReport) throw Object.assign(new Error("El apoyo no existe."), { statusCode: 404 });
+  if (supportReport.supporter_id !== reportedUserId) {
+    throw Object.assign(new Error("El usuario reportado no coincide con este apoyo."), { statusCode: 400 });
+  }
+
+  const { error } = await supabase.from("user_reports").insert({
+    request_id: requestId,
+    support_report_id: supportReportId,
+    reporter_id: user.id,
+    reported_user_id: reportedUserId,
+    reason,
+    details,
+  });
+
+  if (error) throw error;
+  return { ok: true };
+}
+
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.status(405).json({ message: "Método no permitido." });
@@ -395,6 +428,7 @@ export default async function handler(request, response) {
     else if (action === "update_request") data = await updateRequest(supabase, request, user);
     else if (action === "offer_support") data = await offerSupport(supabase, request, user);
     else if (action === "confirm_support") data = await confirmSupport(supabase, request, user);
+    else if (action === "report_user") data = await reportUser(supabase, request, user);
     else if (action === "cancel_request") data = await cancelRequest(supabase, request, user);
     else throw Object.assign(new Error("Acción no soportada."), { statusCode: 400 });
 

@@ -883,6 +883,22 @@ function App() {
     }
   }
 
+  async function reportUser(input: {
+    requestId: string;
+    supportReportId: string;
+    reportedUserId: string;
+    reason: string;
+    details?: string;
+  }) {
+    try {
+      await requestService.reportUser(input);
+      showToast("Reporte enviado correctamente.", "success");
+    } catch (nextError) {
+      showToast(getErrorMessage(nextError, "No se pudo enviar el reporte."), "danger");
+      throw nextError;
+    }
+  }
+
   async function cancelRequest(requestId: string) {
     setDestructiveDialog({ type: "cancel-request", requestId });
   }
@@ -1472,6 +1488,7 @@ function App() {
         onClose={() => setSelectedRequest(null)}
         onOfferSupport={offerSupport}
         onConfirmSupport={confirmSupport}
+        onReportUser={reportUser}
         onCancelRequest={cancelRequest}
         onEditRequest={editRequest}
         publicCode={selectedFreshRequest ? publicRequestCode(selectedFreshRequest, requests) : undefined}
