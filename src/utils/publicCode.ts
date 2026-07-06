@@ -12,48 +12,29 @@ function countryFromAddress(address?: string) {
   return "NX";
 }
 
-function stateFromAddress(address?: string) {
-  const text = address || "";
-  const brazilState = text.match(/\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/i);
-  if (brazilState?.[1]) return brazilState[1].toUpperCase();
-
-  const venezuelaStates: Record<string, string> = {
-    anzoategui: "AN",
-    anzoátegui: "AN",
-    apure: "AP",
-    aragua: "AR",
-    barinas: "BA",
-    bolivar: "BO",
-    bolívar: "BO",
-    carabobo: "CA",
-    caracas: "DC",
-    cojedes: "CO",
-    delta: "DA",
-    falcon: "FA",
-    falcón: "FA",
-    guaira: "LG",
-    lara: "LA",
-    merida: "ME",
-    mérida: "ME",
-    miranda: "MI",
-    monagas: "MO",
-    maturin: "MO",
-    maturín: "MO",
-    portuguesa: "PO",
-    sucre: "SU",
-    tachira: "TA",
-    táchira: "TA",
-    trujillo: "TR",
-    yaracuy: "YA",
-    zulia: "ZU",
-  };
-
-  const normalized = text.toLowerCase();
-  const match = Object.entries(venezuelaStates).find(([name]) => normalized.includes(name));
-  return match?.[1] || "XX";
+function fallbackNumber(id: string) {
+  const compactId = id.replace(/-/g, "").slice(0, 8);
+  const parsed = Number.parseInt(compactId, 16);
+  if (!Number.isFinite(parsed)) return 1;
+  return (parsed % 9000) + 1;
 }
 
-export function publicRequestCode(request: Pick<Request, "id" | "address">) {
-  const shortId = request.id.replace(/-/g, "").slice(0, 6).toUpperCase();
-  return `${shortId}-${stateFromAddress(request.address)}-${countryFromAddress(request.address)}`;
+function requestSequenceNumber(request: Pick<Request, "id" | "createdAt">, allRequests?: Pick<Request, "id" | "createdAt">[]) {
+  if (!allRequests?.length) return fallbackNumber(request.id);
+
+  const sortedRequests = [...allRequests].sort((first, second) => {
+    const timeDiff = new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime();
+    if (timeDiff !== 0) return timeDiff;
+    return first.id.localeCompare(second.id);
+  });
+
+  const index = sortedRequests.findIndex((candidate) => candidate.id === request.id);
+  return index >= 0 ? index + 1 : sortedRequests.length + 1;
+}
+
+export function publicRequestCode(
+  request: Pick<Request, "id" | "address" | "createdAt">,
+  allRequests?: Pick<Request, "id" | "createdAt">[],
+) {
+  return `#${requestSequenceNumber(request, allRequests)}-${countryFromAddress(request.address)}`;
 }

@@ -4,11 +4,11 @@ import { timeAgo } from "../utils/time";
 import { CategoryIcon } from "./CategoryIcon";
 import { StatusBadge } from "./StatusBadge";
 import { BackButton } from "./BackButton";
-import { publicRequestCode } from "../utils/publicCode";
 
 interface RequestDetailModalProps {
   request: Request | null;
   currentUserId: string;
+  publicCode?: string;
   onClose: () => void;
   onOfferSupport: (requestId: string) => void;
   onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) => void;
@@ -55,6 +55,7 @@ function shortElapsed(isoDate: string) {
 export function RequestDetailModal({
   request,
   currentUserId,
+  publicCode,
   onClose,
   onOfferSupport,
   onConfirmSupport,
@@ -105,7 +106,7 @@ export function RequestDetailModal({
                 <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <h2 className="truncate text-[20px] font-extrabold text-sos-ink">Solicitud {publicRequestCode(request)}</h2>
+            <h2 className="truncate text-[20px] font-extrabold text-sos-ink">Solicitud {publicCode || request.id.slice(0, 6)}</h2>
           </div>
           {isOwner && request.status !== "resolved" && (
             <div className="relative">

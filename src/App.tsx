@@ -534,6 +534,7 @@ function App() {
   );
   const requestFormSelectedLocation = manualLocation ?? (activeView === "map" ? mapCenterLocation : undefined);
   const requestFormInitialAddress = editingRequest?.address || manualAddress || (activeView === "map" ? mapCenterAddress : "") || detectedAddress;
+  const createdRequestCode = createdRequest ? publicRequestCode(createdRequest, [...requests, createdRequest]) : "";
   const listRequests = activeView === "requests" ? visibleRequests : visibleMyRequests;
   const pendingListRequests = listRequests.filter((request) => request.status === "pending");
   const resolvedListRequests = listRequests.filter((request) => request.status === "resolved");
@@ -1108,10 +1109,10 @@ function App() {
           </div>
           <h1 className="mt-7 text-[22px] font-extrabold">Solicitud creada</h1>
           <div className="mt-4 inline-flex items-center gap-3 rounded-pill bg-sos-primarySoft px-4 py-2 text-[18px] font-extrabold text-sos-ink">
-            {publicRequestCode(createdRequest)}
+            {createdRequestCode}
             <button
               type="button"
-              onClick={() => void navigator.clipboard?.writeText(publicRequestCode(createdRequest))}
+              onClick={() => void navigator.clipboard?.writeText(createdRequestCode)}
               className="grid h-8 w-8 place-items-center rounded-pill bg-white text-sos-muted"
               aria-label="Copiar código"
             >
@@ -1466,6 +1467,7 @@ function App() {
         onConfirmSupport={confirmSupport}
         onCancelRequest={cancelRequest}
         onEditRequest={editRequest}
+        publicCode={selectedFreshRequest ? publicRequestCode(selectedFreshRequest, requests) : undefined}
       />
 
       <SupportOfferForm
