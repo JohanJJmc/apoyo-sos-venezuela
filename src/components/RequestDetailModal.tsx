@@ -4,6 +4,7 @@ import { timeAgo } from "../utils/time";
 import { CategoryIcon } from "./CategoryIcon";
 import { StatusBadge } from "./StatusBadge";
 import { BackButton } from "./BackButton";
+import { publicRequestCode } from "../utils/publicCode";
 
 interface RequestDetailModalProps {
   request: Request | null;
@@ -12,6 +13,7 @@ interface RequestDetailModalProps {
   onOfferSupport: (requestId: string) => void;
   onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) => void;
   onCancelRequest: (requestId: string) => void;
+  onEditRequest?: (request: Request) => void;
 }
 
 function supportStatusLabel(status: SupportReport["status"]) {
@@ -57,10 +59,12 @@ export function RequestDetailModal({
   onOfferSupport,
   onConfirmSupport,
   onCancelRequest,
+  onEditRequest,
 }: RequestDetailModalProps) {
   const [selectedSupport, setSelectedSupport] = useState<SupportReport | null>(null);
   const [isPartialNoteOpen, setIsPartialNoteOpen] = useState(false);
   const [partialNote, setPartialNote] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   if (!request) return null;
 
   const isOwner = request.createdBy === currentUserId;
@@ -89,7 +93,75 @@ export function RequestDetailModal({
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
       <section className="flex h-full flex-col overflow-y-auto px-7 pb-6 pt-20">
-        <BackButton onClick={onClose} label="Detalle solicitud" />
+        <div className="mb-9 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-pill bg-sos-background text-sos-ink shadow-soft"
+              aria-label="Volver"
+            >
+              <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <h2 className="truncate text-[20px] font-extrabold text-sos-ink">Solicitud {publicRequestCode(request)}</h2>
+          </div>
+          {isOwner && request.status !== "resolved" && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen((open) => !open)}
+                className={`grid h-10 w-10 place-items-center rounded-pill shadow-soft ${
+                  isMenuOpen ? "bg-sos-orange text-white" : "bg-white text-sos-ink"
+                }`}
+                aria-label="Abrir opciones de solicitud"
+                aria-expanded={isMenuOpen}
+              >
+                <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5.5h.01M12 12h.01M12 18.5h.01" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+                </svg>
+              </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 top-12 z-20 w-56 rounded-card border border-sos-border bg-white p-2 shadow-sheet">
+                  <p className="px-3 pb-2 pt-1 text-[12px] font-bold text-sos-muted">Opciones</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onEditRequest?.(request);
+                    }}
+                    className="flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                      </svg>
+                      Editar solicitud
+                    </span>
+                    <span className="text-xl">›</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onCancelRequest(request.id);
+                    }}
+                    className="mt-1 flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 7h12M10 7V5h4v2m-6 3v9m4-9v9m4-9v9M8 7l1 13h6l1-13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Cancelar solicitud
+                    </span>
+                    <span className="text-xl">›</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

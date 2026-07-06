@@ -34,6 +34,7 @@ import { SAFETY_BLOCK_THRESHOLD, safetyService } from "./services/safetyService"
 import { supabase } from "./services/supabaseClient";
 import type { Coordinates, Filters, Request, SupportReport } from "./types/request";
 import type { AppView } from "./components/ViewTabs";
+import { publicRequestCode } from "./utils/publicCode";
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
@@ -136,6 +137,8 @@ function App() {
   const [hasLocationAttemptFinished, setHasLocationAttemptFinished] = useState(() => Boolean(readStoredLocation()));
   const [manualLocation, setManualLocation] = useState<Coordinates>();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<Request | null>(null);
+  const [createdRequest, setCreatedRequest] = useState<Request | null>(null);
   const [authRequiredForRequest, setAuthRequiredForRequest] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [similarRequest, setSimilarRequest] = useState<Request | null>(null);
@@ -530,7 +533,7 @@ function App() {
     [requests, selectedRequest],
   );
   const requestFormSelectedLocation = manualLocation ?? (activeView === "map" ? mapCenterLocation : undefined);
-  const requestFormInitialAddress = manualAddress || (activeView === "map" ? mapCenterAddress : "") || detectedAddress;
+  const requestFormInitialAddress = editingRequest?.address || manualAddress || (activeView === "map" ? mapCenterAddress : "") || detectedAddress;
   const listRequests = activeView === "requests" ? visibleRequests : visibleMyRequests;
   const pendingListRequests = listRequests.filter((request) => request.status === "pending");
   const resolvedListRequests = listRequests.filter((request) => request.status === "resolved");
@@ -600,6 +603,7 @@ function App() {
     setFormError("");
     setSimilarRequest(null);
     setPendingDraft(null);
+    setEditingRequest(null);
     if (await safetyService.isBlocked()) {
       showToast("Esta cuenta está bloqueada por seguridad y no puede publicar solicitudes.", "danger");
       return;
@@ -614,6 +618,16 @@ function App() {
       setManualCountryCode(mapCenterCountryCode);
     }
     if (activeView === "map" && mapCenterAddress) setDetectedAddress(mapCenterAddress);
+    setIsFormOpen(true);
+  }
+
+  function editRequest(request: Request) {
+    setSelectedRequest(null);
+    setSimilarRequest(null);
+    setPendingDraft(null);
+    setEditingRequest(request);
+    setManualLocation({ latitude: request.latitude, longitude: request.longitude });
+    setManualAddress(request.address ?? "");
     setIsFormOpen(true);
   }
 
@@ -655,6 +669,29 @@ function App() {
 
   async function submitDraft(draft: RequestDraft) {
     setFormError("");
+    if (editingRequest) {
+      try {
+        const updatedRequest = await requestService.updateRequest(editingRequest.id, {
+          category: draft.category,
+          item: draft.item,
+          description: draft.description,
+          ...(draft.photoUrl !== editingRequest.photoUrl ? { photoUrl: draft.photoUrl } : {}),
+          latitude: draft.latitude,
+          longitude: draft.longitude,
+          address: draft.address,
+        });
+        setEditingRequest(null);
+        setSelectedRequest(updatedRequest);
+        await finishCreateFlow();
+        showToast("Solicitud actualizada correctamente.", "success");
+      } catch (nextError) {
+        const message = getErrorMessage(nextError, "No fue posible editar la solicitud.");
+        setFormError(message);
+        showToast(message, "danger");
+      }
+      return;
+    }
+
     if (!(await requestCountryMatchesUser(draft))) {
       setFormError("La ubicación seleccionada está fuera de tu país. Ajusta el mapa o usa tu GPS.");
       return;
@@ -697,8 +734,8 @@ function App() {
     }
 
     try {
-      await requestService.createRequest(draft);
-      await finishCreateFlow();
+      const request = await requestService.createRequest(draft);
+      await finishCreateFlow(request);
       showToast("Solicitud enviada correctamente.", "success");
     } catch (nextError) {
       if (navigator.onLine) {
@@ -715,13 +752,15 @@ function App() {
     }
   }
 
-  async function finishCreateFlow() {
+  async function finishCreateFlow(request?: Request) {
     setIsFormOpen(false);
+    setEditingRequest(null);
     setSimilarRequest(null);
     setPendingDraft(null);
     setPickingLocation(false);
     setManualLocation(undefined);
     setFormError("");
+    if (request) setCreatedRequest(request);
     try {
       await reloadRequests();
     } catch {
@@ -733,8 +772,8 @@ function App() {
     if (!pendingDraft) return;
     try {
       if (!(await requestAreaHasCapacity(pendingDraft))) return;
-      await requestService.createRequest(pendingDraft);
-      await finishCreateFlow();
+      const request = await requestService.createRequest(pendingDraft);
+      await finishCreateFlow(request);
       showToast("Solicitud enviada correctamente.", "success");
     } catch (nextError) {
       if (navigator.onLine) {
@@ -1058,6 +1097,64 @@ function App() {
     );
   }
 
+  if (createdRequest) {
+    return (
+      <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-24 text-sos-ink">
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="grid h-16 w-16 place-items-center rounded-pill bg-sos-resolvedSoft text-sos-resolved">
+            <svg aria-hidden="true" className="h-10 w-10" viewBox="0 0 24 24" fill="none">
+              <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h1 className="mt-7 text-[22px] font-extrabold">Solicitud creada</h1>
+          <div className="mt-4 inline-flex items-center gap-3 rounded-pill bg-sos-primarySoft px-4 py-2 text-[18px] font-extrabold text-sos-ink">
+            {publicRequestCode(createdRequest)}
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(publicRequestCode(createdRequest))}
+              className="grid h-8 w-8 place-items-center rounded-pill bg-white text-sos-muted"
+              aria-label="Copiar código"
+            >
+              <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <path d="M9 9h10v10H9z" stroke="currentColor" strokeWidth="2" />
+                <path d="M5 15H4V4h11v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <p className="mt-8 max-w-xs text-[16px] font-semibold leading-snug">
+            Tu solicitud ya está visible en el mapa. Te avisaremos cuando alguien quiera ayudar.
+          </p>
+          <p className="mt-5 max-w-xs text-[16px] font-semibold leading-snug">
+            Podrás revisar la oferta de apoyo antes de compartir tu teléfono.
+          </p>
+        </div>
+
+        <div className="nexo-form-actions">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedRequest(createdRequest);
+              setCreatedRequest(null);
+            }}
+            className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft"
+          >
+            Ver publicación
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveView("map");
+              setCreatedRequest(null);
+            }}
+            className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink shadow-soft"
+          >
+            Volver al mapa
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <AppLayout>
       <AppHeader
@@ -1310,11 +1407,13 @@ function App() {
         similarRequest={similarRequest}
         onClose={() => {
           setIsFormOpen(false);
+          setEditingRequest(null);
           setPickingLocation(false);
           setManualLocation(undefined);
           setManualAddress("");
           setManualCountryCode("");
         }}
+        editingRequest={editingRequest}
         onSubmit={submitDraft}
         onUseManualLocation={startManualLocation}
         onCancelManualLocation={cancelManualLocation}
@@ -1366,6 +1465,7 @@ function App() {
         onOfferSupport={offerSupport}
         onConfirmSupport={confirmSupport}
         onCancelRequest={cancelRequest}
+        onEditRequest={editRequest}
       />
 
       <SupportOfferForm

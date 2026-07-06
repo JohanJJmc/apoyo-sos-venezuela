@@ -177,6 +177,42 @@ async function createRequest(supabase, request, user) {
   return data;
 }
 
+async function updateRequest(supabase, request, user) {
+  const requestId = requireText(request.body?.requestId, "La solicitud");
+  const input = request.body?.input || {};
+
+  const { data: requestRow, error: requestError } = await supabase
+    .from("requests")
+    .select("id, created_by, status")
+    .eq("id", requestId)
+    .single();
+
+  if (requestError || !requestRow) throw Object.assign(new Error("La solicitud no existe."), { statusCode: 404 });
+  if (requestRow.created_by !== user.id) {
+    throw Object.assign(new Error("Solo quien creó la solicitud puede editarla."), { statusCode: 403 });
+  }
+  if (requestRow.status !== "pending") {
+    throw Object.assign(new Error("Solo se pueden editar solicitudes pendientes."), { statusCode: 409 });
+  }
+
+  const payload = {
+    category: requireText(input.category, "La categoría"),
+    item: requireText(input.item, "El artículo"),
+    description: optionalText(input.description),
+    latitude: requireNumber(input.latitude, "La latitud"),
+    longitude: requireNumber(input.longitude, "La longitud"),
+    address: optionalText(input.address),
+  };
+
+  if (Object.prototype.hasOwnProperty.call(input, "photoUrl")) {
+    payload.photo_url = optionalText(input.photoUrl);
+  }
+
+  const { data, error } = await supabase.from("requests").update(payload).eq("id", requestId).select("*").single();
+  if (error) throw error;
+  return data;
+}
+
 async function offerSupport(supabase, request, user) {
   const input = request.body?.input || {};
   const requestId = requireText(request.body?.requestId, "La solicitud");
@@ -354,6 +390,7 @@ export default async function handler(request, response) {
     let data;
 
     if (action === "create_request") data = await createRequest(supabase, request, user);
+    else if (action === "update_request") data = await updateRequest(supabase, request, user);
     else if (action === "offer_support") data = await offerSupport(supabase, request, user);
     else if (action === "confirm_support") data = await confirmSupport(supabase, request, user);
     else if (action === "cancel_request") data = await cancelRequest(supabase, request, user);

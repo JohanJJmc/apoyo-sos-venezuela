@@ -31,6 +31,7 @@ interface RequestFormModalProps {
   currentLocation?: Coordinates;
   selectedLocation?: Coordinates;
   initialAddress?: string;
+  editingRequest?: Request | null;
   similarRequest?: Request | null;
   onClose: () => void;
   onSubmit: (draft: RequestDraft) => Promise<void> | void;
@@ -47,6 +48,7 @@ export function RequestFormModal({
   currentLocation,
   selectedLocation,
   initialAddress,
+  editingRequest,
   similarRequest,
   onClose,
   onSubmit,
@@ -72,7 +74,7 @@ export function RequestFormModal({
   const wasOpen = useRef(false);
 
   const hasPreciseLocation = Boolean(selectedLocation ?? currentLocation);
-  const location = selectedLocation ?? currentLocation ?? FALLBACK_LOCATION;
+  const location = selectedLocation ?? (editingRequest ? { latitude: editingRequest.latitude, longitude: editingRequest.longitude } : undefined) ?? currentLocation ?? FALLBACK_LOCATION;
   const canSubmit = Boolean(category && item);
 
   const locationText = useMemo(() => {
@@ -89,17 +91,22 @@ export function RequestFormModal({
     wasOpen.current = true;
     setCategory(CATEGORIES[0]);
     setItem(CATEGORY_ITEMS[CATEGORIES[0]][0]);
-    setDescription("");
-    setPhotoUrl(undefined);
+    setDescription(editingRequest?.description ?? "");
+    setPhotoUrl(editingRequest?.photoUrl);
     setPhotoFile(undefined);
     setPhotoError("");
     setRequesterName("");
     setRequesterPhone("");
     setRequesterAnonymous(false);
-    setAddress(initialAddress ?? "");
+    setAddress(editingRequest?.address ?? initialAddress ?? "");
     setTurnstileToken("");
     setIsSubmitting(false);
-  }, [initialAddress, isOpen]);
+    if (editingRequest) {
+      setCategory(editingRequest.category);
+      setItem(editingRequest.item);
+      setRequesterAnonymous(Boolean(editingRequest.requesterAnonymous));
+    }
+  }, [editingRequest, initialAddress, isOpen]);
 
   useEffect(() => {
     if (!isOpen || !pickingLocation || !initialAddress) return;
@@ -167,7 +174,13 @@ export function RequestFormModal({
       <section
         className={`nexo-form-screen h-full overflow-y-auto px-7 pb-7 pt-20 ${pickingLocation ? "hidden" : ""}`}
       >
-        <BackButton onClick={onClose} label="Nueva solicitud" />
+        <BackButton onClick={onClose} label={editingRequest ? "Editar solicitud" : "Nueva solicitud de apoyo"} />
+
+        {!editingRequest && (
+          <p className="mt-4 text-[15px] font-semibold leading-snug text-sos-ink">
+            Tu solicitud aparecerá en el mapa para que otras personas puedan ofrecer apoyo.
+          </p>
+        )}
 
         <div className="nexo-form-stack mt-10">
           <CategoryDropdown category={category} item={item} onCategoryChange={changeCategory} onItemChange={setItem} />
@@ -216,6 +229,10 @@ export function RequestFormModal({
 
           <PhotoUploader photoUrl={photoUrl} error={photoError} onChange={handlePhoto} />
 
+          <div className="rounded-input bg-sos-pendingSoft p-4 text-[12px] font-extrabold leading-snug text-sos-pending">
+            NEXO SOS no reemplaza servicios de emergencia ni garantiza la seguridad y salud de las personas. Si estás en peligro inmediato, contacta a las autoridades locales o servicios oficiales.
+          </div>
+
           <section>
             <p className="mb-2 text-[14px] font-extrabold text-sos-muted">Ubicación</p>
             <TextInput
@@ -254,7 +271,7 @@ export function RequestFormModal({
               disabled={!canSubmit || isSubmitting}
               className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
             >
-              {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
+              {isSubmitting ? (editingRequest ? "Guardando..." : "Enviando...") : editingRequest ? "Guardar cambios" : "Enviar Solicitud"}
             </button>
           </div>
         </div>

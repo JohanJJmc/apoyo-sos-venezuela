@@ -189,6 +189,16 @@ export const requestService = {
     return mapRequestWithSignedPhotos(data as RequestRow);
   },
 
+  async updateRequest(
+    requestId: string,
+    input: Partial<Pick<Request, "category" | "item" | "description" | "photoUrl" | "latitude" | "longitude" | "address">>,
+  ) {
+    if (!supabase) return localRequestStore.updateRequest(requestId, input);
+
+    const data = await requestAction<RequestRow>({ action: "update_request", requestId, input });
+    return mapRequestWithSignedPhotos(data as RequestRow);
+  },
+
   async findSimilarPending(category: string, location: Coordinates, radiusMeters = SIMILAR_REQUEST_RADIUS_METERS) {
     const requests = await this.listRequests();
     return requests.find(

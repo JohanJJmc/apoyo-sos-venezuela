@@ -139,6 +139,23 @@ export const localRequestStore = {
     return request;
   },
 
+  updateRequest(
+    requestId: string,
+    input: Partial<Pick<Request, "category" | "item" | "description" | "photoUrl" | "latitude" | "longitude" | "address">>,
+  ) {
+    const userId = getCurrentUserId();
+    let updatedRequest: Request | undefined;
+    write(
+      read().map((request) => {
+        if (request.id !== requestId || request.createdBy !== userId) return request;
+        updatedRequest = { ...request, ...input };
+        return updatedRequest;
+      }),
+    );
+    if (!updatedRequest) throw new Error("No se pudo editar la solicitud.");
+    return updatedRequest;
+  },
+
   findSimilarPending(category: string, location: Coordinates, radiusMeters: number) {
     return read().find(
       (request) =>
