@@ -16,7 +16,7 @@ interface LoginScreenProps {
   onNotify?: (message: string, tone?: "info" | "success" | "danger") => void;
 }
 
-type AuthView = "login" | "signup" | "verify" | "forgotPassword" | "resetPassword";
+type AuthView = "login" | "signup" | "signupPolicy" | "verify" | "forgotPassword" | "resetPassword";
 
 function authErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -170,6 +170,37 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   const cleanFullName = fullName.trim();
   const cleanSignupPhone = signupPhone.trim();
 
+  function validateSignupFields() {
+    if (!isValidFullName(cleanFullName)) {
+      return "Ingresa nombre y apellido usando solo letras.";
+    }
+    if (!isValidPhone(cleanSignupPhone)) {
+      return "Ingresa un teléfono válido con código de país o ciudad.";
+    }
+    if (!isValidEmail(cleanSignupEmail)) {
+      return "Ingresa un correo válido.";
+    }
+    const passwordError = validatePassword(signupPassword);
+    if (passwordError) {
+      return passwordError;
+    }
+    if (signupPassword !== passwordConfirm) {
+      return "Las contraseñas no coinciden.";
+    }
+    return "";
+  }
+
+  function continueToSignupPolicy() {
+    const validationError = validateSignupFields();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError("");
+    setInfo("");
+    setView("signupPolicy");
+  }
+
   async function continueWithGoogle() {
     setIsLoading(true);
     setError("");
@@ -202,29 +233,13 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
   }
 
   async function submitSignUp() {
-    if (!isValidFullName(cleanFullName)) {
-      setError("Ingresa nombre y apellido usando solo letras.");
-      return;
-    }
-    if (!isValidPhone(cleanSignupPhone)) {
-      setError("Ingresa un teléfono válido con código de país o ciudad.");
-      return;
-    }
-    if (!isValidEmail(cleanSignupEmail)) {
-      setError("Ingresa un correo válido.");
-      return;
-    }
-    const passwordError = validatePassword(signupPassword);
-    if (passwordError) {
-      setError(passwordError);
-      return;
-    }
-    if (signupPassword !== passwordConfirm) {
-      setError("Las contraseñas no coinciden.");
+    const validationError = validateSignupFields();
+    if (validationError) {
+      setError(validationError);
       return;
     }
     if (!acceptedSafetyTerms) {
-      setError("Debes aceptar el aviso de seguridad para crear la cuenta.");
+      setError("Debes confirmar que entiendes y aceptas las políticas de uso.");
       return;
     }
     setIsLoading(true);
@@ -327,28 +342,14 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
 
         <div className="mt-10 space-y-5">
           <SecurityNotice />
-          <label className="flex items-start gap-3 rounded-input border border-sos-border bg-white p-4 text-[13px] font-extrabold leading-snug text-sos-ink">
-            <input
-              type="checkbox"
-              checked={acceptedSafetyTerms}
-              onChange={(event) => setAcceptedSafetyTerms(event.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0"
-            />
-            <span>
-              Acepto usar NEXO solo para ayuda legítima. Entiendo que cualquier uso indebido o sospechoso podrá ser bloqueado, registrado, investigado y reportado a las autoridades competentes.
-            </span>
-          </label>
         </div>
 
         {error && <p className="mt-5 rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
         <div className="min-h-8 flex-1" />
 
-        <div className="mb-6">
-          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
-        </div>
         <div className="nexo-form-actions">
-          <button type="button" disabled={isLoading} onClick={submitSignUp} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
-            Crear cuenta
+          <button type="button" disabled={isLoading} onClick={continueToSignupPolicy} className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50">
+            Siguiente
           </button>
           <OAuthDivider />
           <button
@@ -362,6 +363,64 @@ export function LoginScreen({ onLogin, initialView = "login", securityNotice = f
           </button>
           <button type="button" onClick={() => goTo("login")} className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink">
             Ya tengo cuenta
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (view === "signupPolicy") {
+    return (
+      <main className="nexo-form-screen flex min-h-dvh flex-col bg-white px-7 pb-7 pt-16 text-sos-ink">
+        <BackButton onClick={() => goTo("signup")} label="Políticas y seguridad" />
+
+        <section className="mt-4 text-[16px] font-semibold leading-snug text-sos-ink">
+          <p>
+            Antes de crear tu cuenta, es importante que entiendas cómo funciona NEXO SOS y cuáles son sus límites como herramienta comunitaria de apoyo.
+          </p>
+
+          <ul className="mt-9 space-y-6 pl-5 text-[16px] leading-snug">
+            <li className="list-disc">
+              NEXO es una herramienta comunitaria que ayuda a conectar personas que necesitan apoyo con personas que desean ayudar.
+            </li>
+            <li className="list-disc">
+              NEXO no reemplaza servicios oficiales de emergencia, rescate, policía, bomberos, defensa civil, servicios médicos ni autoridades públicas.
+            </li>
+            <li className="list-disc">
+              NEXO no garantiza que una solicitud será atendida, que la información publicada por otros usuarios sea verificada, ni que una interacción entre usuarios sea completamente segura.
+            </li>
+            <li className="list-disc">
+              Si estás en peligro inmediato, contacta a los organismos oficiales correspondientes.
+            </li>
+          </ul>
+        </section>
+
+        <div className="min-h-8 flex-1" />
+
+        <div className="nexo-form-actions">
+          <label className="flex items-start gap-3 rounded-input border border-sos-border bg-sos-background p-4 text-[12px] font-semibold leading-snug text-sos-ink">
+            <input
+              type="checkbox"
+              checked={acceptedSafetyTerms}
+              onChange={(event) => setAcceptedSafetyTerms(event.target.checked)}
+              className="mt-1 h-4 w-4 shrink-0"
+            />
+            <span>
+              Entiendo que NEXO SOS es una herramienta comunitaria de apoyo, no un servicio oficial de emergencia. Acepto usarla de forma responsable y seguir los Términos y la Política de Privacidad.
+            </span>
+          </label>
+
+          <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
+
+          {error && <p className="rounded-input bg-sos-pendingSoft p-3 text-[13px] font-bold text-sos-pending">{error}</p>}
+
+          <button
+            type="button"
+            disabled={isLoading || !acceptedSafetyTerms}
+            onClick={submitSignUp}
+            className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+          >
+            {isLoading ? "Creando cuenta..." : "Aceptar y crear cuenta"}
           </button>
         </div>
       </main>
