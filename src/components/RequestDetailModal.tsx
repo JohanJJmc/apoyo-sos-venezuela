@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Request, SupportReport } from "../types/request";
 import { timeAgo } from "../utils/time";
 import { CategoryIcon } from "./CategoryIcon";
@@ -52,6 +52,50 @@ function shortElapsed(isoDate: string) {
     .replace("mas", "más");
 }
 
+const REPORT_REASONS = [
+  "Información falsa",
+  "Contenido sospechoso",
+  "Uso indebido o ilícito",
+  "Comportamiento riesgoso",
+  "Otro",
+];
+
+type SupportDecisionSuccess = "partial" | "confirmed" | "reported" | null;
+
+function SheetDialog({
+  children,
+  onClose,
+}: {
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[1400] flex items-end justify-center bg-black/70 px-5 pb-5 md:items-center md:pb-0"
+      onClick={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        onClick={(event) => event.stopPropagation()}
+        className="w-full max-w-[390px] rounded-[28px] bg-white px-6 pb-7 pt-9 text-center shadow-modal"
+      >
+        {children}
+      </section>
+    </div>
+  );
+}
+
+function SuccessIcon() {
+  return (
+    <div className="mx-auto grid h-16 w-16 place-items-center rounded-pill bg-sos-resolvedSoft text-sos-resolved">
+      <svg aria-hidden="true" className="h-10 w-10" viewBox="0 0 24 24" fill="none">
+        <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
 export function RequestDetailModal({
   request,
   currentUserId,
@@ -66,8 +110,15 @@ export function RequestDetailModal({
   const [isPartialNoteOpen, setIsPartialNoteOpen] = useState(false);
   const [partialNote, setPartialNote] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAcceptDialogOpen, setIsAcceptDialogOpen] = useState(false);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [decisionSuccess, setDecisionSuccess] = useState<SupportDecisionSuccess>(null);
   if (!request) return null;
 
+  const requestId = request.id;
   const isOwner = request.createdBy === currentUserId;
   const currentUserSupport = request.supportReports.find((report) => report.supporterId === currentUserId);
   const canSeeRequesterPhone = isOwner || Boolean(currentUserSupport);
@@ -90,6 +141,28 @@ export function RequestDetailModal({
     if (!timelineReports.length) return false;
     return new Date(report.createdAt).getTime() > latestTimelineTime;
   });
+
+  function approveSupportAs(status: "confirmed" | "partial", note?: string) {
+    if (!selectedSupport) return;
+    onConfirmSupport(requestId, status, note, selectedSupport.id);
+    setIsAcceptDialogOpen(false);
+    setIsPartialNoteOpen(false);
+    setDecisionSuccess(status);
+  }
+
+  function rejectSupport() {
+    if (!selectedSupport) return;
+    onConfirmSupport(requestId, "rejected", undefined, selectedSupport.id);
+    setIsRejectDialogOpen(false);
+    setSelectedSupport(null);
+  }
+
+  function sendReport() {
+    setIsReportOpen(false);
+    setReportReason("");
+    setReportDetails("");
+    setDecisionSuccess("reported");
+  }
 
   return (
     <div className="absolute inset-0 z-[1000] bg-white">
@@ -318,26 +391,28 @@ export function RequestDetailModal({
               )}
 
               {isOwner && request.status !== "resolved" && selectedSupport.status === "pending_confirmation" && (
-                <div className="fixed inset-x-7 bottom-7 space-y-3 bg-white pt-4">
+                <div className="fixed inset-x-7 bottom-7 space-y-3 bg-white pt-4 md:left-1/2 md:max-w-[420px] md:-translate-x-1/2">
                   <button
                     type="button"
-                    onClick={() => {
-                      onConfirmSupport(request.id, "confirmed", undefined, selectedSupport.id);
-                      setSelectedSupport(null);
-                    }}
-                    className="min-h-14 w-full rounded-pill bg-[#00A651] px-4 text-[16px] font-extrabold text-white"
+                    onClick={() => setIsReportOpen(true)}
+                    className="mx-auto flex min-h-10 items-center justify-center gap-2 px-4 text-[13px] font-extrabold text-sos-muted"
                   >
-                    Solicitud completada
+                    <span aria-hidden="true">⚠</span>
+                    Reportar usuario
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setPartialNote("");
-                      setIsPartialNoteOpen(true);
-                    }}
-                    className="min-h-12 w-full rounded-pill border border-sos-muted px-4 text-[15px] font-extrabold text-sos-muted"
+                    onClick={() => setIsAcceptDialogOpen(true)}
+                    className="sos-gradient min-h-14 w-full rounded-pill px-4 text-[16px] font-extrabold text-white shadow-soft"
                   >
-                    Apoyo parcial
+                    Aceptar apoyo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsRejectDialogOpen(true)}
+                    className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-ink shadow-soft"
+                  >
+                    Rechazar apoyo
                   </button>
                 </div>
               )}
@@ -345,39 +420,207 @@ export function RequestDetailModal({
           </div>
         )}
 
+        {isAcceptDialogOpen && selectedSupport && (
+          <SheetDialog onClose={() => setIsAcceptDialogOpen(false)}>
+            <img src="/assets/apoyo-flag.svg" alt="" className="mx-auto h-20 w-24" />
+            <h3 className="mt-5 text-[18px] font-extrabold text-sos-ink">Aceptar apoyo</h3>
+            <p className="mt-4 text-[14px] font-semibold leading-snug text-sos-ink">
+              Elige si este apoyo resuelve parte de tu solicitud o si ya cubre toda la necesidad.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAcceptDialogOpen(false);
+                setPartialNote("");
+                setIsPartialNoteOpen(true);
+              }}
+              className="mt-8 min-h-12 w-full rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-ink shadow-soft"
+            >
+              Apoyo parcial
+            </button>
+            <button
+              type="button"
+              onClick={() => approveSupportAs("confirmed")}
+              className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-4 text-[16px] font-extrabold text-white shadow-soft"
+            >
+              Apoyo completo
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAcceptDialogOpen(false)}
+              className="mt-3 min-h-11 w-full rounded-pill px-4 text-[15px] font-extrabold text-sos-ink"
+            >
+              Cancelar
+            </button>
+          </SheetDialog>
+        )}
+
+        {isRejectDialogOpen && selectedSupport && (
+          <SheetDialog onClose={() => setIsRejectDialogOpen(false)}>
+            <img src="/assets/functional-alert.svg" alt="" className="mx-auto h-16 w-16" />
+            <h3 className="mt-6 text-[18px] font-extrabold text-sos-ink">¿Rechazar este apoyo?</h3>
+            <p className="mt-4 text-[14px] font-semibold leading-snug text-sos-ink">
+              Este apoyo dejará de aparecer como opción para coordinar. Si notas algo sospechoso, también puedes reportar al usuario.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsRejectDialogOpen(false);
+                setIsReportOpen(true);
+              }}
+              className="mt-8 min-h-12 w-full rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-ink shadow-soft"
+            >
+              Reportar
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsRejectDialogOpen(false)}
+              className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-4 text-[16px] font-extrabold text-white shadow-soft"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={rejectSupport}
+              className="mt-3 min-h-11 w-full rounded-pill px-4 text-[15px] font-extrabold text-sos-ink"
+            >
+              Rechazar apoyo
+            </button>
+          </SheetDialog>
+        )}
+
         {isPartialNoteOpen && (
-          <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-[rgba(16,42,67,0.42)] px-7">
-            <section className="w-full max-w-[420px] rounded-card bg-white p-6 shadow-modal">
-              <h3 className="text-center text-[20px] font-extrabold text-sos-ink">¿Qué apoyo falta?</h3>
-              <p className="mt-3 text-center text-[15px] font-semibold leading-snug text-sos-muted">
-                Describe brevemente qué quedó pendiente para que otras personas sepan cómo completar la ayuda.
-              </p>
-              <textarea
-                value={partialNote}
-                onChange={(event) => setPartialNote(event.target.value.slice(0, 240))}
-                placeholder="Ejemplo: faltan 2 cajas de agua y medicamentos para la noche"
-                className="mt-5 min-h-28 w-full resize-none rounded-input border border-sos-border bg-sos-background p-4 text-[16px] font-semibold text-sos-ink outline-none focus:border-sos-orange"
-              />
+          <SheetDialog onClose={() => setIsPartialNoteOpen(false)}>
+            <img src="/assets/comment.svg" alt="" className="mx-auto h-16 w-16" />
+            <h3 className="mt-6 text-[18px] font-extrabold text-sos-ink">Apoyo marcado como parcial</h3>
+            <p className="mt-3 text-[14px] font-semibold leading-snug text-sos-ink">
+              Por favor indica qué falta para completar tu pedido de ayuda.
+            </p>
+            <textarea
+              value={partialNote}
+              onChange={(event) => setPartialNote(event.target.value.slice(0, 240))}
+              placeholder="¿Qué falta?"
+              className="mt-5 min-h-28 w-full resize-none rounded-input border border-sos-border bg-sos-background p-4 text-left text-[16px] font-semibold text-sos-ink outline-none focus:border-sos-orange"
+            />
+            <button
+              type="button"
+              disabled={!partialNote.trim()}
+              onClick={() => approveSupportAs("partial", partialNote.trim())}
+              className="sos-gradient mt-5 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+            >
+              Terminar
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPartialNoteOpen(false)}
+              className="mt-3 min-h-12 w-full rounded-pill px-5 text-[15px] font-extrabold text-sos-ink"
+            >
+              Cancelar
+            </button>
+          </SheetDialog>
+        )}
+
+        {isReportOpen && selectedSupport && (
+          <div className="fixed inset-0 z-[1400] bg-white px-7 pb-7 pt-20">
+            <BackButton onClick={() => setIsReportOpen(false)} label="Reportar usuario" />
+            <section className="nexo-form-screen mt-8 flex h-[calc(100%-7rem)] flex-col">
+              <div className="nexo-form-group">
+                <label className="block">
+                  <span className="mb-3 block text-[15px] font-extrabold text-sos-muted">Motivos de reporte</span>
+                  <select
+                    value={reportReason}
+                    onChange={(event) => setReportReason(event.target.value)}
+                    className="min-h-14 w-full rounded-input border border-sos-border bg-white px-4 text-[16px] font-semibold text-sos-ink shadow-soft outline-none focus:border-sos-orange"
+                  >
+                    <option value="">Selecciona un motivo</option>
+                    {REPORT_REASONS.map((reason) => (
+                      <option key={reason} value={reason}>{reason}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-3 block text-[15px] font-extrabold text-sos-muted">Si deseas puedes agregar más detalle</span>
+                  <textarea
+                    value={reportDetails}
+                    onChange={(event) => setReportDetails(event.target.value.slice(0, 400))}
+                    placeholder="Cuéntanos qué sucedió"
+                    className="min-h-32 w-full resize-none rounded-input border border-sos-border bg-sos-background p-4 text-[16px] font-semibold text-sos-ink outline-none focus:border-sos-orange"
+                  />
+                </label>
+                <div className="rounded-input bg-sos-partialSoft p-4 text-[13px] font-extrabold leading-snug text-sos-partial">
+                  Si estás en peligro inmediato, contacta a las autoridades o servicios oficiales de emergencia de tu localidad.
+                </div>
+              </div>
+              <div className="flex-1" />
+              <div className="nexo-form-actions">
+                <button
+                  type="button"
+                  disabled={!reportReason}
+                  onClick={sendReport}
+                  className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+                >
+                  Enviar reporte
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsReportOpen(false)}
+                  className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink shadow-soft"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {decisionSuccess && (
+          <div className="fixed inset-0 z-[1500] flex flex-col bg-white px-7 pb-7 pt-24 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center">
+              <SuccessIcon />
+              {decisionSuccess === "reported" ? (
+                <>
+                  <h3 className="mt-8 text-[24px] font-extrabold leading-tight text-sos-ink">Reporte enviado, gracias por avisarnos</h3>
+                  <p className="mt-8 max-w-xs text-[18px] font-semibold leading-snug text-sos-ink">
+                    Revisaremos este caso y tomaremos medidas inmediatamente si encontramos actividad sospechosa o uso indebido.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="mt-8 text-[18px] font-extrabold text-sos-ink">
+                    Apoyo aceptado como {decisionSuccess === "partial" ? "parcial" : "completo"}
+                  </h3>
+                  <p className="mt-6 max-w-xs text-[14px] font-semibold leading-snug text-sos-ink">
+                    {decisionSuccess === "partial"
+                      ? `El apoyo enviado por ${selectedSupport?.supporterName || "la persona"} fue marcado como parcial, tu solicitud aún está activa y otras personas se pueden sumar para apoyarte.`
+                      : `El apoyo enviado por ${selectedSupport?.supporterName || "la persona"} fue marcado como completo, tu solicitud fue completada correctamente y dejará de estar visible en el mapa.`}
+                  </p>
+                  <div className="mt-9 rounded-input bg-sos-partialSoft p-4 text-[12px] font-extrabold leading-snug text-sos-partial">
+                    Recuerda coordinar con precaución, comparte solo la información necesaria y reporta cualquier comportamiento sospechoso.
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="nexo-form-actions">
+              {decisionSuccess !== "reported" && (
+                <button
+                  type="button"
+                  onClick={() => setDecisionSuccess(null)}
+                  className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft"
+                >
+                  Ver apoyo
+                </button>
+              )}
               <button
                 type="button"
-                disabled={!partialNote.trim()}
                 onClick={() => {
-                  onConfirmSupport(request.id, "partial", partialNote.trim(), selectedSupport?.id);
-                  setIsPartialNoteOpen(false);
+                  setDecisionSuccess(null);
                   setSelectedSupport(null);
                 }}
-                className="mt-5 min-h-14 w-full rounded-pill bg-sos-partial px-5 text-[16px] font-extrabold text-white disabled:bg-sos-border"
+                className={`${decisionSuccess === "reported" ? "sos-gradient text-white" : "border border-sos-border bg-white text-sos-ink shadow-soft"} min-h-12 w-full rounded-pill px-5 text-[15px] font-extrabold`}
               >
-                Guardar ayuda parcial
+                {decisionSuccess === "reported" ? "Regresar" : "Ver mi solicitud"}
               </button>
-              <button
-                type="button"
-                onClick={() => setIsPartialNoteOpen(false)}
-                className="mt-3 min-h-12 w-full rounded-pill bg-sos-background px-5 text-[15px] font-extrabold text-sos-muted"
-              >
-                Cancelar
-              </button>
-            </section>
+            </div>
           </div>
         )}
       </section>

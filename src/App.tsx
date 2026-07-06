@@ -870,7 +870,14 @@ function App() {
       }
       await requestService.confirmSupport(requestId, status, partialNote, supportReportId);
       await reloadRequests();
-      showToast(status === "confirmed" ? "Solicitud aprobada como atendida." : "Ayuda parcial registrada.", "success");
+      showToast(
+        status === "confirmed"
+          ? "Solicitud aprobada como atendida."
+          : status === "partial"
+            ? "Ayuda parcial registrada."
+            : "Apoyo rechazado correctamente.",
+        "success",
+      );
     } catch (nextError) {
       showToast(getErrorMessage(nextError, "Hubo un error al aprobar la solicitud."), "danger");
     }

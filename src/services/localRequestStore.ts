@@ -214,7 +214,7 @@ export const localRequestStore = {
         const targetReportId = supportReportId || fallbackReportId;
         return {
           ...request,
-          status: status === "confirmed" ? "resolved" : "pending",
+          status: status === "confirmed" ? "resolved" : request.status,
           partialSupport: status === "partial" ? true : request.partialSupport,
           partialSupportNote: status === "partial" && partialNote ? partialNote.trim() : request.partialSupportNote,
           resolvedAt: status === "confirmed" ? now() : undefined,

@@ -274,7 +274,7 @@ async function confirmSupport(supabase, request, user) {
 
   const { data: requestRow, error: requestError } = await supabase
     .from("requests")
-    .select("id, created_by, category, item, partial_note")
+    .select("id, created_by, category, item, partial_support, partial_note, resolved_at")
     .eq("id", requestId)
     .single();
 
@@ -303,15 +303,17 @@ async function confirmSupport(supabase, request, user) {
     throw Object.assign(new Error("No hay un apoyo pendiente para confirmar."), { statusCode: 409 });
   }
 
-  const requestUpdates = {
-    status: status === "confirmed" ? "resolved" : "pending",
-    partial_support: status === "partial",
-    partial_note: status === "partial" ? partialNote : null,
-    resolved_at: status === "confirmed" ? new Date().toISOString() : null,
-  };
+  if (status !== "rejected") {
+    const requestUpdates = {
+      status: status === "confirmed" ? "resolved" : "pending",
+      partial_support: status === "partial",
+      partial_note: status === "partial" ? partialNote : null,
+      resolved_at: status === "confirmed" ? new Date().toISOString() : null,
+    };
 
-  const { error: updateRequestError } = await supabase.from("requests").update(requestUpdates).eq("id", requestId);
-  if (updateRequestError) throw updateRequestError;
+    const { error: updateRequestError } = await supabase.from("requests").update(requestUpdates).eq("id", requestId);
+    if (updateRequestError) throw updateRequestError;
+  }
 
   const { data: updatedReport, error: updateReportError } = await supabase
     .from("support_reports")
