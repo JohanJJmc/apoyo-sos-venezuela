@@ -21,7 +21,7 @@ export function DeleteAccountPasswordDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/70 px-5"
+      className="nexo-modal-overlay z-[1300]"
       onClick={() => {
         if (!isLoading) onCancel();
       }}
@@ -31,7 +31,7 @@ export function DeleteAccountPasswordDialog({
         aria-modal="true"
         aria-labelledby="delete-password-title"
         onClick={(event) => event.stopPropagation()}
-        className="flex min-h-[424px] w-full max-w-[334px] flex-col rounded-[28px] bg-white px-6 pb-7 pt-10 text-center shadow-modal"
+        className="nexo-modal-panel flex min-h-[424px] flex-col px-6 pb-7 pt-10 text-center md:max-w-[334px]"
       >
         <img src="/assets/functional-alert.svg" alt="" className="mx-auto h-14 w-14" />
         <h2 id="delete-password-title" className="mt-8 text-[20px] font-extrabold text-sos-ink">
@@ -58,7 +58,7 @@ export function DeleteAccountPasswordDialog({
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="min-h-14 w-full rounded-pill border border-sos-border px-5 text-[16px] font-extrabold text-sos-ink disabled:opacity-50"
+          className="nexo-action-button w-full rounded-pill border border-sos-border px-5 font-extrabold text-sos-ink disabled:opacity-50"
         >
           Cancelar acción
         </button>
@@ -66,7 +66,7 @@ export function DeleteAccountPasswordDialog({
           type="button"
           onClick={onContinue}
           disabled={password.length < 6 || isLoading}
-          className="sos-gradient mt-4 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
+          className="nexo-action-button sos-gradient mt-4 w-full rounded-pill px-5 font-extrabold text-white shadow-soft disabled:bg-sos-border disabled:shadow-none"
         >
           {isLoading ? "Eliminando..." : "Continuar"}
         </button>

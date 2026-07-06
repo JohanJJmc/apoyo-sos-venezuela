@@ -7,13 +7,13 @@ export function AccountDeletedDialog({ isOpen, onClose }: AccountDeletedDialogPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/70 px-5" onClick={onClose}>
+    <div className="nexo-modal-overlay z-[1300]" onClick={onClose}>
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="account-deleted-title"
         onClick={(event) => event.stopPropagation()}
-        className="flex min-h-[424px] w-full max-w-[334px] flex-col items-center rounded-[28px] bg-white px-6 pb-7 pt-10 text-center shadow-modal"
+        className="nexo-modal-panel flex min-h-[424px] flex-col items-center px-6 pb-7 pt-10 text-center md:max-w-[334px]"
       >
         <img src="/assets/functional-done.svg" alt="" className="h-16 w-16" />
         <h2 id="account-deleted-title" className="mt-10 text-[20px] font-extrabold text-sos-ink">
@@ -28,7 +28,7 @@ export function AccountDeletedDialog({ isOpen, onClose }: AccountDeletedDialogPr
         <button
           type="button"
           onClick={onClose}
-          className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft"
+          className="nexo-action-button sos-gradient w-full rounded-pill px-5 font-extrabold text-white shadow-soft"
         >
           Cerrar
         </button>

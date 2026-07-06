@@ -78,14 +78,14 @@ function SheetDialog({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[1400] flex items-end justify-center bg-black/70 px-5 pb-5 md:items-center md:pb-0"
+      className="nexo-modal-overlay z-[1400]"
       onClick={onClose}
     >
       <section
         role="dialog"
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-[390px] rounded-[28px] bg-white px-6 pb-7 pt-9 text-center shadow-modal"
+        className="nexo-modal-panel px-6 pb-7 pt-9 text-center"
       >
         {children}
       </section>
@@ -419,14 +419,14 @@ export function RequestDetailModal({
                   <button
                     type="button"
                     onClick={() => setIsAcceptDialogOpen(true)}
-                    className="sos-gradient min-h-14 w-full rounded-pill px-4 text-[16px] font-extrabold text-white shadow-soft"
+                    className="nexo-action-button sos-gradient w-full rounded-pill px-4 font-extrabold text-white shadow-soft"
                   >
                     Aceptar apoyo
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsRejectDialogOpen(true)}
-                    className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-ink shadow-soft"
+                    className="nexo-action-button w-full rounded-pill border border-sos-border bg-white px-4 font-extrabold text-sos-ink shadow-soft"
                   >
                     Rechazar apoyo
                   </button>
@@ -450,21 +450,21 @@ export function RequestDetailModal({
                 setPartialNote("");
                 setIsPartialNoteOpen(true);
               }}
-              className="mt-8 min-h-12 w-full rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-ink shadow-soft"
+              className="nexo-action-button mt-8 w-full rounded-pill border border-sos-border bg-white px-4 font-extrabold text-sos-ink shadow-soft"
             >
               Apoyo parcial
             </button>
             <button
               type="button"
               onClick={() => approveSupportAs("confirmed")}
-              className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-4 text-[16px] font-extrabold text-white shadow-soft"
+              className="nexo-action-button sos-gradient mt-3 w-full rounded-pill px-4 font-extrabold text-white shadow-soft"
             >
               Apoyo completo
             </button>
             <button
               type="button"
               onClick={() => setIsAcceptDialogOpen(false)}
-              className="mt-3 min-h-11 w-full rounded-pill px-4 text-[15px] font-extrabold text-sos-ink"
+              className="nexo-action-button mt-3 w-full rounded-pill px-4 font-extrabold text-sos-ink"
             >
               Cancelar
             </button>
@@ -484,21 +484,21 @@ export function RequestDetailModal({
                 setIsRejectDialogOpen(false);
                 setIsReportOpen(true);
               }}
-              className="mt-8 min-h-12 w-full rounded-pill border border-sos-border bg-white px-4 text-[15px] font-extrabold text-sos-ink shadow-soft"
+              className="nexo-action-button mt-8 w-full rounded-pill border border-sos-border bg-white px-4 font-extrabold text-sos-ink shadow-soft"
             >
               Reportar
             </button>
             <button
               type="button"
               onClick={() => setIsRejectDialogOpen(false)}
-              className="sos-gradient mt-3 min-h-14 w-full rounded-pill px-4 text-[16px] font-extrabold text-white shadow-soft"
+              className="nexo-action-button sos-gradient mt-3 w-full rounded-pill px-4 font-extrabold text-white shadow-soft"
             >
               Cancelar
             </button>
             <button
               type="button"
               onClick={rejectSupport}
-              className="mt-3 min-h-11 w-full rounded-pill px-4 text-[15px] font-extrabold text-sos-ink"
+              className="nexo-action-button mt-3 w-full rounded-pill px-4 font-extrabold text-sos-ink"
             >
               Rechazar apoyo
             </button>
@@ -522,14 +522,14 @@ export function RequestDetailModal({
               type="button"
               disabled={!partialNote.trim()}
               onClick={() => approveSupportAs("partial", partialNote.trim())}
-              className="sos-gradient mt-5 min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+              className="nexo-action-button sos-gradient mt-5 w-full rounded-pill px-5 font-extrabold text-white shadow-soft disabled:opacity-50"
             >
               Terminar
             </button>
             <button
               type="button"
               onClick={() => setIsPartialNoteOpen(false)}
-              className="mt-3 min-h-12 w-full rounded-pill px-5 text-[15px] font-extrabold text-sos-ink"
+              className="nexo-action-button mt-3 w-full rounded-pill px-5 font-extrabold text-sos-ink"
             >
               Cancelar
             </button>
@@ -573,14 +573,14 @@ export function RequestDetailModal({
                   type="button"
                   disabled={!reportReason}
                   onClick={sendReport}
-                  className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft disabled:opacity-50"
+                  className="nexo-action-button sos-gradient w-full rounded-pill px-5 font-extrabold text-white shadow-soft disabled:opacity-50"
                 >
                   Enviar reporte
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsReportOpen(false)}
-                  className="min-h-12 w-full rounded-pill border border-sos-border bg-white px-5 text-[15px] font-extrabold text-sos-ink shadow-soft"
+                  className="nexo-action-button w-full rounded-pill border border-sos-border bg-white px-5 font-extrabold text-sos-ink shadow-soft"
                 >
                   Cancelar
                 </button>
@@ -621,7 +621,7 @@ export function RequestDetailModal({
                 <button
                   type="button"
                   onClick={() => setDecisionSuccess(null)}
-                  className="sos-gradient min-h-14 w-full rounded-pill px-5 text-[16px] font-extrabold text-white shadow-soft"
+                  className="nexo-action-button sos-gradient w-full rounded-pill px-5 font-extrabold text-white shadow-soft"
                 >
                   Ver apoyo
                 </button>
@@ -632,7 +632,7 @@ export function RequestDetailModal({
                   setDecisionSuccess(null);
                   setSelectedSupport(null);
                 }}
-                className={`${decisionSuccess === "reported" ? "sos-gradient text-white" : "border border-sos-border bg-white text-sos-ink shadow-soft"} min-h-12 w-full rounded-pill px-5 text-[15px] font-extrabold`}
+                className={`nexo-action-button ${decisionSuccess === "reported" ? "sos-gradient text-white" : "border border-sos-border bg-white text-sos-ink shadow-soft"} w-full rounded-pill px-5 font-extrabold`}
               >
                 {decisionSuccess === "reported" ? "Regresar" : "Ver mi solicitud"}
               </button>

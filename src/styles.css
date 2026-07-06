@@ -105,6 +105,73 @@ textarea {
   font: inherit;
 }
 
+button {
+  font-size: 16px;
+}
+
+button[class*="min-h-14"],
+button[class*="h-14"] {
+  height: 50px;
+  min-height: 50px !important;
+}
+
+.nexo-action-button {
+  align-items: center;
+  display: inline-flex;
+  font-size: 16px;
+  height: 50px;
+  justify-content: center;
+  min-height: 0;
+}
+
+.nexo-modal-overlay {
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: fixed;
+}
+
+.nexo-modal-panel {
+  animation: nexo-slide-in 220ms ease-out both;
+  background: #ffffff;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 18px 40px rgba(16, 42, 67, 0.22);
+  max-width: none;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .nexo-modal-overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .nexo-modal-panel {
+    border-radius: 28px;
+    max-width: 390px;
+  }
+}
+
+@keyframes nexo-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexo-modal-panel {
+    animation: none;
+  }
+}
+
 .leaflet-container {
   width: 100%;
   height: 100%;
