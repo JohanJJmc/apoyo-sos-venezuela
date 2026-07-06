@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORY_ITEMS, CATEGORIES } from "../data/categories";
-import { uploadPhoto, validatePhotoFile } from "../services/photoStorageService";
+import { compressPhotoFile, uploadPhoto } from "../services/photoStorageService";
 import { verifyTurnstileToken } from "../services/turnstileService";
 import type { Coordinates, Request } from "../types/request";
 import { CategoryDropdown } from "./CategoryDropdown";
@@ -113,7 +113,7 @@ export function RequestFormModal({
     setItem(CATEGORY_ITEMS[nextCategory][0]);
   }
 
-  function handlePhoto(file?: File) {
+  async function handlePhoto(file?: File) {
     setPhotoError("");
     if (!file) {
       setPhotoUrl(undefined);
@@ -122,22 +122,14 @@ export function RequestFormModal({
     }
 
     try {
-      validatePhotoFile(file);
+      const compressedFile = await compressPhotoFile(file);
+      setPhotoFile(compressedFile);
+      setPhotoUrl(URL.createObjectURL(compressedFile));
     } catch (nextError) {
       setPhotoError(nextError instanceof Error ? nextError.message : "La foto no se pudo usar. Puedes publicar sin foto.");
       setPhotoUrl(undefined);
       setPhotoFile(undefined);
-      return;
     }
-
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setPhotoUrl(String(reader.result));
-    reader.onerror = () => {
-      setPhotoError("La foto no se pudo cargar. Puedes publicar sin foto.");
-      setPhotoUrl(undefined);
-    };
-    reader.readAsDataURL(file);
   }
 
   async function submit() {

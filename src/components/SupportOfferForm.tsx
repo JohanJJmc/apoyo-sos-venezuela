@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { uploadPhoto, validatePhotoFile } from "../services/photoStorageService";
+import { compressPhotoFile, uploadPhoto } from "../services/photoStorageService";
 import { verifyTurnstileToken } from "../services/turnstileService";
 import type { Coordinates, SupportReport } from "../types/request";
 import { PhotoUploader } from "./PhotoUploader";
@@ -43,7 +43,7 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
 
   if (!isOpen) return null;
 
-  function handlePhoto(file?: File) {
+  async function handlePhoto(file?: File) {
     setPhotoError("");
     if (!file) {
       setPhotoUrl(undefined);
@@ -52,19 +52,14 @@ export function SupportOfferForm({ isOpen, currentLocation, currentUserName = ""
     }
 
     try {
-      validatePhotoFile(file);
+      const compressedFile = await compressPhotoFile(file);
+      setPhotoFile(compressedFile);
+      setPhotoUrl(URL.createObjectURL(compressedFile));
     } catch (nextError) {
       setPhotoError(nextError instanceof Error ? nextError.message : "La foto no se pudo usar. Puedes continuar sin foto.");
       setPhotoUrl(undefined);
       setPhotoFile(undefined);
-      return;
     }
-
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setPhotoUrl(String(reader.result));
-    reader.onerror = () => setPhotoError("La foto no se pudo cargar. Puedes continuar sin foto.");
-    reader.readAsDataURL(file);
   }
 
   async function submitSupport() {
