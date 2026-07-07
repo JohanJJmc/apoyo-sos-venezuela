@@ -14,7 +14,7 @@ interface RequestDetailModalProps {
   onConfirmSupport: (requestId: string, status: SupportReport["status"], partialNote?: string, supportReportId?: string) => void;
   onReportUser?: (input: {
     requestId: string;
-    supportReportId: string;
+    supportReportId?: string;
     reportedUserId: string;
     reason: string;
     details?: string;
@@ -121,13 +121,15 @@ export function RequestDetailModal({
   const [isAcceptDialogOpen, setIsAcceptDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<"request" | "support">("support");
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [decisionSuccess, setDecisionSuccess] = useState<SupportDecisionSuccess>(null);
   if (!request) return null;
 
   const requestId = request.id;
-  const isOwner = request.createdBy === currentUserId;
+  const requestOwnerId = request.createdBy;
+  const isOwner = requestOwnerId === currentUserId;
   const currentUserSupport = request.supportReports.find((report) => report.supporterId === currentUserId);
   const canSeeRequesterPhone = isOwner || Boolean(currentUserSupport);
   const pendingSupport = request.supportReports.some((report) => report.status === "pending_confirmation");
@@ -166,11 +168,12 @@ export function RequestDetailModal({
   }
 
   async function sendReport() {
-    if (!selectedSupport || !reportReason) return;
+    if (!reportReason) return;
+    const isSupportReport = reportTarget === "support" && selectedSupport;
     await onReportUser?.({
       requestId,
-      supportReportId: selectedSupport.id,
-      reportedUserId: selectedSupport.supporterId,
+      supportReportId: isSupportReport ? selectedSupport.id : undefined,
+      reportedUserId: isSupportReport ? selectedSupport.supporterId : requestOwnerId,
       reason: reportReason,
       details: reportDetails.trim() || undefined,
     });
@@ -197,7 +200,7 @@ export function RequestDetailModal({
             </button>
             <h2 className="truncate text-[20px] font-extrabold text-sos-ink">Solicitud {publicCode || request.id.slice(0, 6)}</h2>
           </div>
-          {isOwner && request.status !== "resolved" && (
+          {((isOwner && request.status !== "resolved") || !isOwner) && (
             <div className="relative">
               <button
                 type="button"
@@ -215,38 +218,63 @@ export function RequestDetailModal({
               {isMenuOpen && (
                 <div className="absolute right-0 top-12 z-20 w-56 rounded-card border border-sos-border bg-white p-2 shadow-sheet">
                   <p className="px-3 pb-2 pt-1 text-[12px] font-bold text-sos-muted">Opciones</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      onEditRequest?.(request);
-                    }}
-                    className="flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                      </svg>
-                      Editar solicitud
-                    </span>
-                    <span className="text-xl">›</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      onCancelRequest(request.id);
-                    }}
-                    className="mt-1 flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 7h12M10 7V5h4v2m-6 3v9m4-9v9m4-9v9M8 7l1 13h6l1-13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Cancelar solicitud
-                    </span>
-                    <span className="text-xl">›</span>
-                  </button>
+                  {isOwner ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onEditRequest?.(request);
+                        }}
+                        className="flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          </svg>
+                          Editar solicitud
+                        </span>
+                        <span className="text-xl">›</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          onCancelRequest(request.id);
+                        }}
+                        className="mt-1 flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M6 7h12M10 7V5h4v2m-6 3v9m4-9v9m4-9v9M8 7l1 13h6l1-13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Cancelar solicitud
+                        </span>
+                        <span className="text-xl">›</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setSelectedSupport(null);
+                        setReportTarget("request");
+                        setReportReason("");
+                        setReportDetails("");
+                        setIsReportOpen(true);
+                      }}
+                      className="flex min-h-11 w-full items-center justify-between rounded-input px-3 text-left text-[14px] font-extrabold text-sos-ink hover:bg-sos-background"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 9v4m0 4h.01M10.3 4.6 2.7 18a1.5 1.5 0 0 0 1.3 2.2h16a1.5 1.5 0 0 0 1.3-2.2L13.7 4.6a1.9 1.9 0 0 0-3.4 0Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Reportar solicitud
+                      </span>
+                      <span className="text-xl">›</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -410,7 +438,10 @@ export function RequestDetailModal({
                 <div className="fixed inset-x-7 bottom-7 space-y-3 bg-white pt-4 md:left-1/2 md:max-w-[420px] md:-translate-x-1/2">
                   <button
                     type="button"
-                    onClick={() => setIsReportOpen(true)}
+                    onClick={() => {
+                      setReportTarget("support");
+                      setIsReportOpen(true);
+                    }}
                     className="mx-auto flex min-h-10 items-center justify-center gap-2 px-4 text-[13px] font-extrabold text-sos-muted"
                   >
                     <span aria-hidden="true">⚠</span>
@@ -482,6 +513,7 @@ export function RequestDetailModal({
               type="button"
               onClick={() => {
                 setIsRejectDialogOpen(false);
+                setReportTarget("support");
                 setIsReportOpen(true);
               }}
               className="nexo-action-button mt-8 w-full rounded-pill border border-sos-border bg-white px-4 font-extrabold text-sos-ink shadow-soft"
@@ -536,9 +568,9 @@ export function RequestDetailModal({
           </SheetDialog>
         )}
 
-        {isReportOpen && selectedSupport && (
+        {isReportOpen && (
           <div className="fixed inset-0 z-[1400] bg-white px-7 pb-7 pt-20">
-            <BackButton onClick={() => setIsReportOpen(false)} label="Reportar usuario" />
+            <BackButton onClick={() => setIsReportOpen(false)} label={reportTarget === "support" ? "Reportar usuario" : "Reportar solicitud"} />
             <section className="nexo-form-screen mt-8 flex h-[calc(100%-7rem)] flex-col">
               <div className="nexo-form-group">
                 <label className="block">

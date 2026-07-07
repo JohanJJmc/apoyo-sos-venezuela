@@ -59,9 +59,13 @@ function readLocalSignup(): LocalSignup | null {
 export const authService = {
   async getSupabaseSession() {
     if (!supabase) return null;
-    const { data } = await supabase.auth.getSession();
-    const user = data.session?.user;
-    return user ? saveAndReturn(sessionFromSupabaseUser(user)) : null;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      return user ? saveAndReturn(sessionFromSupabaseUser(user)) : null;
+    } catch {
+      return null;
+    }
   },
 
   async signIn(email: string, password: string) {

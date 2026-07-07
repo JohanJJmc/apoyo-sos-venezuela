@@ -37,8 +37,15 @@ import type { AppView } from "./components/ViewTabs";
 import { publicRequestCode } from "./utils/publicCode";
 
 function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error) return error.message;
+  const message = error instanceof Error ? error.message : undefined;
+  if (message && /failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
+    return "No se pudo conectar con NEXO. Si estás en una red corporativa, puede estar bloqueando Supabase o las APIs de la app.";
+  }
+  if (message) return message;
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    if (/failed to fetch|networkerror|load failed|network request failed/i.test(error.message)) {
+      return "No se pudo conectar con NEXO. Si estás en una red corporativa, puede estar bloqueando Supabase o las APIs de la app.";
+    }
     return error.message;
   }
   if (error && typeof error === "object") {
@@ -208,8 +215,11 @@ function App() {
   const reloadRequests = useCallback(async () => {
     try {
       setRequests(await requestService.listRequests());
-    } catch {
-      setFormError("No se pudieron cargar las solicitudes. Revisa la conexion.");
+    } catch (nextError) {
+      const message = getErrorMessage(nextError, "No se pudieron cargar las solicitudes. Revisa la conexión.");
+      setFormError(message);
+      setSyncMessage(message);
+      window.setTimeout(() => setSyncMessage(""), 7000);
     }
   }, []);
 
@@ -885,7 +895,7 @@ function App() {
 
   async function reportUser(input: {
     requestId: string;
-    supportReportId: string;
+    supportReportId?: string;
     reportedUserId: string;
     reason: string;
     details?: string;

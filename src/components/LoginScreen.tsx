@@ -21,6 +21,9 @@ type AuthView = "login" | "signup" | "signupPolicy" | "verify" | "forgotPassword
 function authErrorMessage(error: unknown) {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
+    if (message.includes("failed to fetch") || message.includes("networkerror") || message.includes("network request failed")) {
+      return "No se pudo conectar con el inicio de sesión. Si estás en una PC o red corporativa, puede estar bloqueando Supabase. Prueba otra red o pide liberar los dominios de NEXO.";
+    }
     if (message.includes("rate limit")) {
       return "Se enviaron muchos correos en poco tiempo. Espera unos minutos y vuelve a intentar.";
     }

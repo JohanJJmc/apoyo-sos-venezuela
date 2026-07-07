@@ -257,7 +257,7 @@ export const requestService = {
 
   async reportUser(input: {
     requestId: string;
-    supportReportId: string;
+    supportReportId?: string;
     reportedUserId: string;
     reason: string;
     details?: string;

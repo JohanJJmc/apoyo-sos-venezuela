@@ -377,26 +377,42 @@ async function cancelRequest(supabase, request, user) {
 async function reportUser(supabase, request, user) {
   const input = request.body?.input || {};
   const requestId = requireText(input.requestId, "La solicitud");
-  const supportReportId = requireText(input.supportReportId, "El apoyo");
+  const supportReportId = optionalText(input.supportReportId);
   const reportedUserId = requireText(input.reportedUserId, "El usuario reportado");
   const reason = requireText(input.reason, "El motivo");
   const details = optionalText(input.details);
 
-  const { data: supportReport, error: supportError } = await supabase
-    .from("support_reports")
-    .select("id, request_id, supporter_id")
-    .eq("id", supportReportId)
-    .eq("request_id", requestId)
+  const { data: requestRow, error: requestError } = await supabase
+    .from("requests")
+    .select("id, created_by")
+    .eq("id", requestId)
     .single();
 
-  if (supportError || !supportReport) throw Object.assign(new Error("El apoyo no existe."), { statusCode: 404 });
-  if (supportReport.supporter_id !== reportedUserId) {
-    throw Object.assign(new Error("El usuario reportado no coincide con este apoyo."), { statusCode: 400 });
+  if (requestError || !requestRow) throw Object.assign(new Error("La solicitud no existe."), { statusCode: 404 });
+
+  if (supportReportId) {
+    const { data: supportReport, error: supportError } = await supabase
+      .from("support_reports")
+      .select("id, request_id, supporter_id")
+      .eq("id", supportReportId)
+      .eq("request_id", requestId)
+      .single();
+
+    if (supportError || !supportReport) throw Object.assign(new Error("El apoyo no existe."), { statusCode: 404 });
+    if (supportReport.supporter_id !== reportedUserId) {
+      throw Object.assign(new Error("El usuario reportado no coincide con este apoyo."), { statusCode: 400 });
+    }
+  } else if (requestRow.created_by !== reportedUserId) {
+    throw Object.assign(new Error("El usuario reportado no coincide con esta solicitud."), { statusCode: 400 });
+  }
+
+  if (reportedUserId === user.id) {
+    throw Object.assign(new Error("No puedes reportarte a ti mismo."), { statusCode: 400 });
   }
 
   const { error } = await supabase.from("user_reports").insert({
     request_id: requestId,
-    support_report_id: supportReportId,
+    support_report_id: supportReportId || null,
     reporter_id: user.id,
     reported_user_id: reportedUserId,
     reason,
